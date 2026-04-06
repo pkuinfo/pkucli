@@ -1,0 +1,13 @@
+[workspace]
+members = [
+    "crates/info-spider",
+    "crates/common",
+    "crates/treehole",
+    "crates/course",
+]
+resolver = "2"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+strip = true
