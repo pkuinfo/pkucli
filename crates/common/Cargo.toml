@@ -25,3 +25,7 @@ viuer = { version = "0.9", features = ["print-file"] }
 directories = "5"
 chrono = { version = "0.4", features = ["serde"] }
 url = "2"
+hmac = "0.12"
+sha1 = "0.10"
+data-encoding = "2"
+rpassword = "5"

@@ -51,11 +51,14 @@ struct LoginError {
 }
 
 /// 使用用户名和密码进行 IAAA 登录
+///
+/// `otp_code` 为手机令牌，若账号启用了 OTP 则必须提供。
 pub async fn login_password(
     client: &reqwest::Client,
     config: &IaaaConfig,
     username: &str,
     password: &str,
+    otp_code: Option<&str>,
 ) -> Result<IaaaToken> {
     // Step 1: 获取 RSA 公钥
     println!("{} 获取 IAAA RSA 公钥...", "[1/3]".green());
@@ -89,7 +92,7 @@ pub async fn login_password(
         ("password", encrypted.as_str()),
         ("randCode", ""),
         ("smsCode", ""),
-        ("otpCode", ""),
+        ("otpCode", otp_code.unwrap_or("")),
         ("redirUrl", config.redirect_url.as_str()),
     ];
 

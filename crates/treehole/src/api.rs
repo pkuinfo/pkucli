@@ -299,20 +299,41 @@ impl TreeholeApi {
 
     // ─── 通用请求 ───────────────────────────────────────────
 
+    async fn parse_response<T: DeserializeOwned + Default>(
+        resp: reqwest::Response,
+        path: &str,
+    ) -> Result<ApiResp<T>> {
+        let status = resp.status();
+        let body = resp
+            .text()
+            .await
+            .with_context(|| format!("读取 {path} 响应失败"))?;
+
+        if status == reqwest::StatusCode::UNAUTHORIZED {
+            return Err(anyhow!("登录已失效，请重新运行 `treehole login`"));
+        }
+
+        serde_json::from_str(&body).with_context(|| {
+            if status.is_success() {
+                format!("{path} 响应解析失败: {}", &body[..body.len().min(100)])
+            } else {
+                format!("{path} 请求失败 (HTTP {status})")
+            }
+        })
+    }
+
     async fn get<T: DeserializeOwned + Default>(&self, path: &str) -> Result<T> {
         let url = format!("{TREEHOLE_BASE}/chapi/api/v3{path}");
-        let resp: ApiResp<T> = self
+        let resp = self
             .client
             .get(&url)
             .header("authorization", format!("Bearer {}", self.token))
             .header("uuid", &self.uuid)
             .send()
             .await
-            .with_context(|| format!("GET {path} 失败"))?
-            .json()
-            .await
-            .with_context(|| format!("解析 {path} 响应失败"))?;
-        Self::check_resp(resp, path)
+            .with_context(|| format!("GET {path} 失败"))?;
+        let api_resp: ApiResp<T> = Self::parse_response(resp, path).await?;
+        Self::check_resp(api_resp, path)
     }
 
     async fn post_json<T: DeserializeOwned + Default, B: Serialize>(
@@ -321,7 +342,7 @@ impl TreeholeApi {
         body: &B,
     ) -> Result<T> {
         let url = format!("{TREEHOLE_BASE}/chapi/api/v3{path}");
-        let resp: ApiResp<T> = self
+        let resp = self
             .client
             .post(&url)
             .header("authorization", format!("Bearer {}", self.token))
@@ -329,17 +350,15 @@ impl TreeholeApi {
             .json(body)
             .send()
             .await
-            .with_context(|| format!("POST {path} 失败"))?
-            .json()
-            .await
-            .with_context(|| format!("解析 {path} 响应失败"))?;
-        Self::check_resp(resp, path)
+            .with_context(|| format!("POST {path} 失败"))?;
+        let api_resp: ApiResp<T> = Self::parse_response(resp, path).await?;
+        Self::check_resp(api_resp, path)
     }
 
     /// POST 请求，只关心是否成功，不关心 data 内容
     async fn post_action<B: Serialize>(&self, path: &str, body: &B) -> Result<String> {
         let url = format!("{TREEHOLE_BASE}/chapi/api/v3{path}");
-        let resp: ApiResp<serde_json::Value> = self
+        let resp = self
             .client
             .post(&url)
             .header("authorization", format!("Bearer {}", self.token))
@@ -347,19 +366,17 @@ impl TreeholeApi {
             .json(body)
             .send()
             .await
-            .with_context(|| format!("POST {path} 失败"))?
-            .json()
-            .await
-            .with_context(|| format!("解析 {path} 响应失败"))?;
-        if resp.code == 40002 {
+            .with_context(|| format!("POST {path} 失败"))?;
+        let api_resp: ApiResp<serde_json::Value> = Self::parse_response(resp, path).await?;
+        if api_resp.code == 40002 {
             return Err(anyhow!(
                 "需要短信验证，请重新运行 `treehole login -p` 完成验证"
             ));
         }
-        if resp.success {
-            Ok(resp.message)
+        if api_resp.success {
+            Ok(api_resp.message)
         } else {
-            Err(anyhow!("{path}: {}", resp.message))
+            Err(anyhow!("{path}: {}", api_resp.message))
         }
     }
 
@@ -379,18 +396,16 @@ impl TreeholeApi {
     /// GET 请求到 /chapi/api/ (非 v3) 路径
     async fn get_legacy<T: DeserializeOwned + Default>(&self, path: &str) -> Result<T> {
         let url = format!("{TREEHOLE_BASE}/chapi/api{path}");
-        let resp: ApiResp<T> = self
+        let resp = self
             .client
             .get(&url)
             .header("authorization", format!("Bearer {}", self.token))
             .header("uuid", &self.uuid)
             .send()
             .await
-            .with_context(|| format!("GET {path} 失败"))?
-            .json()
-            .await
-            .with_context(|| format!("解析 {path} 响应失败"))?;
-        Self::check_resp(resp, path)
+            .with_context(|| format!("GET {path} 失败"))?;
+        let api_resp: ApiResp<T> = Self::parse_response(resp, path).await?;
+        Self::check_resp(api_resp, path)
     }
 
     // ─── Holes ──────────────────────────────────────────────
@@ -527,8 +542,9 @@ impl TreeholeApi {
     // ─── 用户 ───────────────────────────────────────────────
 
     pub async fn user_info(&self) -> Result<UserInfo> {
-        let url = format!("{TREEHOLE_BASE}/chapi/api/v3/users/info");
-        let resp: ApiResp<UserInfo> = self
+        let path = "/users/info";
+        let url = format!("{TREEHOLE_BASE}/chapi/api/v3{path}");
+        let resp = self
             .client
             .post(&url)
             .header("authorization", format!("Bearer {}", self.token))
@@ -536,13 +552,12 @@ impl TreeholeApi {
             .json(&serde_json::json!({}))
             .send()
             .await
-            .context("获取用户信息失败")?
-            .json()
-            .await?;
-        if resp.success {
-            resp.data.ok_or_else(|| anyhow!("用户信息为空"))
+            .context("获取用户信息失败")?;
+        let api_resp: ApiResp<UserInfo> = Self::parse_response(resp, path).await?;
+        if api_resp.success {
+            api_resp.data.ok_or_else(|| anyhow!("用户信息为空"))
         } else {
-            Err(anyhow!("获取用户信息失败: {}", resp.message))
+            Err(anyhow!("获取用户信息失败: {}", api_resp.message))
         }
     }
 

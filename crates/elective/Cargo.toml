@@ -1,18 +1,18 @@
 [package]
-name = "course"
+name = "elective"
 version = "0.1.0"
 edition = "2021"
-description = "北大教学网 CLI 客户端"
+description = "北大选课网 CLI 客户端"
 
 [[bin]]
-name = "course"
+name = "elective"
 path = "src/main.rs"
 
 [dependencies]
 info-common = { path = "../common" }
 clap = { version = "4.5", features = ["derive"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "fs", "process", "io-util"] }
-reqwest = { version = "0.12", features = ["cookies", "gzip", "brotli", "json", "stream"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+reqwest = { version = "0.12", features = ["cookies", "gzip", "brotli", "json"] }
 reqwest_cookie_store = "0.8"
 cookie_store = "0.21"
 serde = { version = "1", features = ["derive"] }
@@ -26,10 +26,7 @@ rand = "0.8"
 rpassword = "5"
 scraper = "0.22"
 regex = "1"
-m3u8-rs = "6.0"
-aes = "0.8"
-cbc = { version = "0.1.2", features = ["std"] }
-url = "2.5"
-bytes = "1"
-indicatif = "0.17"
-futures = "0.3"
+base64 = "0.22"
+image = "0.25"
+viuer = { version = "0.9", features = ["print-file"] }
+toml = "0.8"

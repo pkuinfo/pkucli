@@ -81,7 +81,18 @@ pub async fn login_with_password(username: Option<&str>) -> Result<()> {
     let device_uuid = get_device_uuid(&store);
     let config = iaaa_config(&device_uuid);
 
-    let iaaa_token = iaaa::login_password(&simple_client, &config, &username, &password).await?;
+    let otp_code = info_common::otp::get_current_otp(store.config_dir())?;
+    if otp_code.is_some() {
+        println!("{} 已自动填入手机令牌", "[otp]".cyan());
+    }
+    let iaaa_token = iaaa::login_password(
+        &simple_client,
+        &config,
+        &username,
+        &password,
+        otp_code.as_deref(),
+    )
+    .await?;
 
     complete_treehole_login(&store, &iaaa_token.token, &device_uuid).await
 }

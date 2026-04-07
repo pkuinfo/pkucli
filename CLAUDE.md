@@ -12,6 +12,8 @@ cargo build --release
 cargo build --release --bin info-spider
 cargo build --release --bin treehole
 cargo build --release --bin course
+cargo build --release --bin campuscard
+cargo build --release --bin elective
 
 # Lint (zero warnings required — do NOT use #[allow(dead_code)] etc.)
 cargo clippy --workspace
@@ -22,6 +24,8 @@ cargo clippy --bin treehole
 # Run a binary
 cargo run --bin treehole -- login
 cargo run --bin course -- courses --all
+cargo run --bin campuscard -- login
+cargo run --bin elective -- login
 cargo run --bin info-spider -- search "人民日报"
 
 # Tests (currently no test files exist)
@@ -30,11 +34,12 @@ cargo test --workspace
 
 ## Architecture
 
-Four crates in a Cargo workspace. Three are CLI binaries; one is a shared library.
+Six crates in a Cargo workspace. Five are CLI binaries; one is a shared library.
 
 ```
-info-common (lib)          Shared: IAAA auth, session/cookie persistence, QR rendering
+info-common (lib)          Shared: IAAA auth, OTP, session/cookie persistence, QR rendering
     ├── iaaa.rs            PKU unified auth (password + QR code login)
+    ├── otp.rs             TOTP code generation (RFC 6238, for IAAA 手机令牌)
     ├── session.rs         Session/CookieStore JSON persistence → ~/.config/info/<name>/
     └── qr.rs              Terminal QR display (viuer) or system viewer
 
@@ -44,7 +49,16 @@ treehole (bin)             PKU Treehole anonymous forum CLI
 
 course (bin)               PKU Teaching Network (Blackboard Learn) CLI
     Uses: info-common for IAAA → Blackboard SSO callback
-    API: HTML scraping with scraper crate (no JSON API)
+    API: HTML scraping with scraper crate (no JSON API), multipart upload
+
+campuscard (bin)           PKU Campus Card CLI (bdcard.pku.edu.cn, Synjones platform)
+    Uses: info-common for IAAA → portal → berserker-auth → JWT
+    API: JSON REST, requires mobile UA + synjones-auth header, HTTP/1.1 only
+    Features: payment QR code, recharge, transaction history, monthly stats
+
+elective (bin)             PKU Course Selection (elective.pku.edu.cn) CLI
+    Uses: info-common for IAAA → elective SSO callback
+    API: HTML scraping, CAPTCHA handling (base64 image recognition)
 
 info-spider (bin)          WeChat Official Account article crawler
     Standalone: own session.rs, own login flow (WeChat QR, not IAAA)
@@ -53,9 +67,11 @@ info-spider (bin)          WeChat Official Account article crawler
 
 ## Auth Flows
 
-**IAAA (treehole + course):** Both reuse `info_common::iaaa`. Each crate provides its own `IaaaConfig` with a different `app_id` and `redirect_url`:
+**IAAA (treehole + course + campuscard + elective):** All reuse `info_common::iaaa`. Each crate provides its own `IaaaConfig` with a different `app_id` and `redirect_url`:
 - treehole: `app_id="PKU Helper"`, redirect to `/chapi/cas_iaaa_login`
 - course: `app_id="blackboard"`, redirect to Blackboard SSO endpoint
+- campuscard: `app_id="portal2017"`, redirect to portal → berserker-auth → JWT
+- elective: `app_id="elective"`, redirect to elective SSO endpoint
 
 After IAAA returns a token, each crate has its own `complete_*_login()` that exchanges the token with the target service and saves session+cookies.
 
@@ -63,7 +79,7 @@ After IAAA returns a token, each crate has its own `complete_*_login()` that exc
 
 ## Session & Config Storage
 
-Treehole/course use `info_common::session::Store::new(APP_NAME)` → `~/.config/info/<name>/`:
+Treehole/course/campuscard/elective use `info_common::session::Store::new(APP_NAME)` → `~/.config/info/<name>/`:
 - `session.json` — token, expires_at, uid, created_at, extra (serde_json::Value)
 - `cookies.json` — reqwest CookieStore serialized
 
@@ -77,7 +93,7 @@ Every crate has a `client.rs` with two builders:
 - `build(cookie_store: Arc<CookieStoreMutex>)` — for authenticated requests, persistent cookies
 - `build_simple()` — for IAAA login only (internal cookie jar, JSESSIONID handling)
 
-Both set a realistic Chrome User-Agent. Treehole uses `redirect(Policy::none())` for manual redirect handling; others use default policy.
+Both set a realistic User-Agent. Treehole uses `redirect(Policy::none())` for manual redirect handling. Campuscard uses mobile UA (`PKUANDROID`) and requires `http1_only()` (server doesn't support HTTP/2).
 
 ## Key Conventions
 

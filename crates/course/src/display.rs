@@ -1,6 +1,9 @@
 //! 终端格式化输出
 
-use crate::api::{AssignmentDetail, ContentItem, ContentType, CourseEntry, CourseInfo};
+use crate::api::{
+    self, AssignmentDetail, AssignmentSummary, ContentItem, ContentType, CourseEntry, CourseInfo,
+    VideoInfo,
+};
 use colored::Colorize;
 
 /// 打印课程列表
@@ -18,7 +21,6 @@ pub fn print_courses(courses: &[CourseInfo]) {
                 c.name().bold(),
                 format!("({})", c.id).dimmed(),
             );
-            // 如果有学期后缀，显示
             let title = c.title();
             if title != c.name() {
                 if let Some(semester) = title.rfind('(').map(|i| &title[i..]) {
@@ -46,8 +48,13 @@ pub fn print_courses(courses: &[CourseInfo]) {
 
     println!(
         "{}",
-        format!("共 {} 门课程（当前 {} / 往期 {}）", courses.len(), current.len(), past.len())
-            .dimmed()
+        format!(
+            "共 {} 门课程（当前 {} / 往期 {}）",
+            courses.len(),
+            current.len(),
+            past.len()
+        )
+        .dimmed()
     );
 }
 
@@ -96,7 +103,7 @@ pub fn print_content_list(items: &[ContentItem]) {
         }
 
         for att in &item.attachments {
-            println!("      {} {} {}", "📎".dimmed(), att.name, att.url.dimmed());
+            println!("      {} {} {}", "附件".dimmed(), att.name, att.url.dimmed());
         }
     }
     println!();
@@ -108,7 +115,13 @@ pub fn print_assignment_detail(detail: &AssignmentDetail) {
     println!();
 
     if let Some(deadline) = &detail.deadline {
-        println!("  {} {}", "截止时间:".yellow(), deadline);
+        print!("  {} {}", "截止时间:".yellow(), deadline);
+        // 尝试解析并显示倒计时
+        if let Some(dt) = api::parse_deadline(deadline) {
+            let delta = dt - chrono::Local::now();
+            print!("  ({})", api::fmt_time_delta(delta));
+        }
+        println!();
     }
 
     println!("  {} {}", "提交状态:".cyan(), detail.status);
@@ -125,10 +138,89 @@ pub fn print_assignment_detail(detail: &AssignmentDetail) {
         println!();
         println!("  {} ({}个)", "附件:".bold(), detail.attachments.len());
         for att in &detail.attachments {
-            println!("    📎 {}", att.name);
+            println!("    附件 {}", att.name);
         }
     }
     println!();
+}
+
+/// 打印跨课程作业汇总列表
+pub fn print_assignments_list(assignments: &[AssignmentSummary], show_all: bool) {
+    let title = if show_all {
+        "所有作业 (包括已完成)"
+    } else {
+        "未完成作业"
+    };
+    println!(
+        "{}\n",
+        format!("── {} ({}) ──", title, assignments.len()).bold()
+    );
+
+    for (i, a) in assignments.iter().enumerate() {
+        // 课程名 > 作业标题
+        print!(
+            "  {} {} {} {} ",
+            format!("[{}]", i + 1).cyan(),
+            a.course_name.bold().blue(),
+            ">".dimmed(),
+            a.title.bold(),
+        );
+
+        // 提交状态 / 截止时间
+        if let Some(attempt) = &a.last_attempt {
+            print!("({})", format!("已完成: {attempt}").green());
+        } else if let Some(dt) = a.deadline {
+            let delta = dt - chrono::Local::now();
+            print!("({})", api::fmt_time_delta(delta));
+        } else if let Some(raw) = &a.deadline_raw {
+            print!("({})", raw.dimmed());
+        } else {
+            print!("({})", "无截止时间".dimmed());
+        }
+
+        // hash ID
+        println!(" {}", a.hash_id.dimmed());
+
+        // 描述
+        for desc in &a.descriptions {
+            if !desc.is_empty() {
+                println!("      {}", truncate_display(desc, 80).dimmed());
+            }
+        }
+
+        // 附件
+        for att in &a.attachments {
+            println!("      {} {}", "附件".dimmed(), att.name);
+        }
+    }
+    println!();
+}
+
+/// 打印课程回放列表
+pub fn print_videos(videos: &[VideoInfo]) {
+    println!("{}", "── 课程回放 ──".bold());
+    println!();
+
+    // 按课程分组
+    let mut current_course = String::new();
+    for (i, v) in videos.iter().enumerate() {
+        if v.course_name != current_course {
+            if !current_course.is_empty() {
+                println!();
+            }
+            println!("{}", format!("  [{}]", v.course_name).bold().blue());
+            current_course = v.course_name.clone();
+        }
+        println!(
+            "    {} {} {} {}",
+            format!("[{}]", i + 1).cyan(),
+            v.title,
+            format!("({})", v.time).dimmed(),
+            v.hash_id.dimmed(),
+        );
+    }
+    println!();
+    println!("{}", format!("共 {} 个回放", videos.len()).dimmed());
 }
 
 /// 截断文本到指定宽度（中文算 2 宽度）

@@ -4,6 +4,8 @@ members = [
     "crates/common",
     "crates/treehole",
     "crates/course",
+    "crates/elective",
+    "crates/campuscard",
 ]
 resolver = "2"
 

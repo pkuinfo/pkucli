@@ -215,6 +215,31 @@ enum Commands {
         #[arg(short, long)]
         start: Option<String>,
     },
+
+    /// 手机令牌 (OTP) 管理
+    Otp {
+        #[command(subcommand)]
+        action: OtpAction,
+    },
+}
+
+#[derive(Subcommand)]
+enum OtpAction {
+    /// 绑定手机令牌（交互式，需要短信验证）
+    Bind {
+        #[arg(short, long)]
+        username: Option<String>,
+    },
+    /// 手动设置 TOTP secret
+    Set {
+        secret: String,
+        #[arg(short, long)]
+        username: Option<String>,
+    },
+    /// 查看当前 OTP 码
+    Show,
+    /// 清除已保存的 OTP 配置
+    Clear,
 }
 
 #[tokio::main]
@@ -286,6 +311,43 @@ async fn main() -> anyhow::Result<()> {
             commands::cmd_activity_cal(start.as_deref(), end.as_deref(), page, limit).await?
         }
         Commands::Schedule { start } => commands::cmd_schedule(start.as_deref()).await?,
+
+        // ── OTP ──
+        Commands::Otp { action } => {
+            let store = info_common::session::Store::new("treehole")?;
+            handle_otp(action, store.config_dir()).await?;
+        }
+    }
+    Ok(())
+}
+
+async fn handle_otp(action: OtpAction, config_dir: &std::path::Path) -> anyhow::Result<()> {
+    use colored::Colorize;
+    match action {
+        OtpAction::Bind { username } => {
+            info_common::otp::bind_otp_interactive(config_dir, username.as_deref()).await?;
+        }
+        OtpAction::Set { secret, username } => {
+            let uid = username.unwrap_or_default();
+            info_common::otp::set_otp_secret(config_dir, &secret, &uid)?;
+        }
+        OtpAction::Show => match info_common::otp::get_current_otp(config_dir)? {
+            Some(code) => {
+                let config = info_common::otp::load_otp_config(config_dir)?
+                    .expect("OTP 配置存在");
+                println!("{} {} ({})", "OTP:".green().bold(), code.bold(), config.user_id);
+            }
+            None => {
+                println!(
+                    "{} 未配置 OTP。使用 `otp bind` 绑定或 `otp set <SECRET>` 手动设置",
+                    "○".red()
+                );
+            }
+        },
+        OtpAction::Clear => {
+            info_common::otp::clear_otp_config(config_dir)?;
+            println!("{} OTP 配置已清除", "✓".green());
+        }
     }
     Ok(())
 }
