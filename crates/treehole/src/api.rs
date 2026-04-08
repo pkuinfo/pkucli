@@ -4,6 +4,7 @@ use crate::client::{self, TREEHOLE_BASE};
 use anyhow::{anyhow, Context, Result};
 use info_common::session::Store;
 use reqwest::Client;
+use reqwest::multipart;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 const APP_NAME: &str = "treehole";
@@ -45,6 +46,8 @@ pub struct Hole {
     pub tags_info: Vec<TagInfo>,
     #[serde(default)]
     pub is_top: i64,
+    #[serde(default)]
+    pub media_ids: String,
 }
 
 #[derive(Debug, Default)]
@@ -81,6 +84,8 @@ pub struct HoleListItem {
     pub tags_info: Vec<TagInfo>,
     #[serde(default, alias = "comments")]
     pub comment_list: Vec<Comment>,
+    #[serde(default)]
+    pub media_ids: String,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -94,6 +99,8 @@ pub struct Comment {
     pub is_lz: i64,
     #[serde(default)]
     pub quote: serde_json::Value,
+    #[serde(default)]
+    pub media_ids: String,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -681,6 +688,67 @@ impl TreeholeApi {
         Ok(data.list)
     }
 
+    // ─── 图片上传 ───────────────────────────────────────────
+
+    /// 上传图片，返回 media_id
+    pub async fn upload_image(&self, path: &std::path::Path) -> Result<String> {
+        let file_name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("image.jpg")
+            .to_string();
+        let data = tokio::fs::read(path)
+            .await
+            .with_context(|| format!("读取图片文件失败: {}", path.display()))?;
+
+        let mime = match path.extension().and_then(|e| e.to_str()) {
+            Some("png") => "image/png",
+            Some("gif") => "image/gif",
+            Some("webp") => "image/webp",
+            Some("bmp") => "image/bmp",
+            _ => "image/jpeg",
+        };
+
+        let part = multipart::Part::bytes(data)
+            .file_name(file_name)
+            .mime_str(mime)?;
+        let form = multipart::Form::new().part("file", part);
+
+        let url = format!("{TREEHOLE_BASE}/chapi/api/v3/media/uploadImage");
+        let resp = self
+            .client
+            .post(&url)
+            .header("authorization", format!("Bearer {}", self.token))
+            .header("uuid", &self.uuid)
+            .multipart(form)
+            .send()
+            .await
+            .context("上传图片失败")?;
+
+        let api_resp: ApiResp<serde_json::Value> =
+            Self::parse_response(resp, "/media/uploadImage").await?;
+        if !api_resp.success {
+            return Err(anyhow!("上传图片失败: {}", api_resp.message));
+        }
+        let data = api_resp.data.ok_or_else(|| anyhow!("上传成功但返回数据为空"))?;
+        // 尝试从响应中提取 media id
+        let id = data
+            .get("id")
+            .and_then(|v| v.as_i64().map(|n| n.to_string()).or_else(|| v.as_str().map(String::from)))
+            .ok_or_else(|| anyhow!("上传响应缺少 id 字段: {data}"))?;
+        Ok(id)
+    }
+
+    /// 批量上传图片，返回逗号分隔的 media_ids
+    pub async fn upload_images(&self, paths: &[std::path::PathBuf]) -> Result<String> {
+        let mut ids = Vec::new();
+        for path in paths {
+            let id = self.upload_image(path).await?;
+            ids.push(id);
+        }
+        Ok(ids.join(","))
+    }
+
     // ─── 周日程 ─────────────────────────────────────────────
 
     pub async fn list_schedules(&self, start: &str, end: &str) -> Result<Vec<ScheduleItem>> {
@@ -716,6 +784,8 @@ pub struct CreateHoleReq {
     pub fold: i64,
     #[serde(default)]
     pub reward_cost: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub media_ids: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -726,6 +796,8 @@ pub struct CreateCommentReq {
     pub comment_id: Option<i64>,
     #[serde(default)]
     pub anonymous: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub media_ids: Option<String>,
 }
 
 // ─── 手动解析（避免 serde 在数组/对象混合字段上报错）─────────────
@@ -758,6 +830,7 @@ fn parse_comment(c: &serde_json::Value) -> Comment {
         name_tag: val_str(c, "name_tag"),
         is_lz: val_i64(c, "is_lz"),
         quote: c.get("quote").cloned().unwrap_or(serde_json::Value::Null),
+        media_ids: val_str(c, "media_ids"),
     }
 }
 
@@ -780,6 +853,7 @@ fn parse_hole(v: &serde_json::Value) -> Hole {
         is_top: val_i64(v, "is_top"),
         reward_cost: val_i64(v, "reward_cost"),
         tags_info: parse_tags(v),
+        media_ids: val_str(v, "media_ids"),
     }
 }
 
@@ -803,6 +877,7 @@ fn parse_hole_list_items(data: &serde_json::Value) -> Result<Vec<HoleListItem>> 
             reward_cost: val_i64(v, "reward_cost"),
             tags_info: parse_tags(v),
             comment_list: parse_comments(v, "comment_list"),
+            media_ids: val_str(v, "media_ids"),
         })
         .collect();
     Ok(items)

@@ -72,6 +72,7 @@ pub async fn cmd_post(
     named: bool,
     fold: bool,
     reward: Option<i64>,
+    images: Vec<std::path::PathBuf>,
 ) -> Result<()> {
     let api = TreeholeApi::from_session_verified().await?;
 
@@ -87,13 +88,24 @@ pub async fn cmd_post(
         return Err(anyhow!("内容不能为空"));
     }
 
+    // 上传图片
+    let (post_type, media_ids) = if images.is_empty() {
+        ("text".to_string(), None)
+    } else {
+        println!("{} 正在上传 {} 张图片...", "⏳".dimmed(), images.len());
+        let ids = api.upload_images(&images).await?;
+        println!("{} 图片上传完成", "✓".green());
+        ("image".to_string(), Some(ids))
+    };
+
     let req = CreateHoleReq {
         text: content,
-        r#type: "text".to_string(),
+        r#type: post_type,
         tags_ids: tag,
         anonymous: if named { 0 } else { 1 },
         fold: if fold { 1 } else { 0 },
         reward_cost: reward.unwrap_or(0),
+        media_ids,
     };
 
     let result = api.create_hole(&req).await?;
@@ -109,7 +121,12 @@ pub async fn cmd_post(
 
 // ─── reply ──────────────────────────────────────────────────────
 
-pub async fn cmd_reply(pid: i64, text: Option<String>, quote_cid: Option<i64>) -> Result<()> {
+pub async fn cmd_reply(
+    pid: i64,
+    text: Option<String>,
+    quote_cid: Option<i64>,
+    image: Option<std::path::PathBuf>,
+) -> Result<()> {
     let api = TreeholeApi::from_session_verified().await?;
 
     let content = match text {
@@ -149,11 +166,22 @@ pub async fn cmd_reply(pid: i64, text: Option<String>, quote_cid: Option<i64>) -
         return Err(anyhow!("回复内容不能为空"));
     }
 
+    // 上传图片（评论仅限一张）
+    let media_ids = if let Some(img_path) = image {
+        println!("{} 正在上传图片...", "⏳".dimmed());
+        let id = api.upload_image(&img_path).await?;
+        println!("{} 图片上传完成", "✓".green());
+        Some(id)
+    } else {
+        None
+    };
+
     let req = CreateCommentReq {
         pid,
         text: content,
         comment_id: quote_cid,
         anonymous: 1,
+        media_ids,
     };
 
     api.create_comment(&req).await?;

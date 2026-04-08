@@ -81,6 +81,9 @@ enum Commands {
         /// 悬赏树叶数量
         #[arg(long)]
         reward: Option<i64>,
+        /// 图片路径（可多次指定，如 --image a.jpg --image b.png）
+        #[arg(short, long)]
+        image: Vec<std::path::PathBuf>,
     },
     /// 回复帖子
     Reply {
@@ -92,6 +95,9 @@ enum Commands {
         /// 引用某条评论的 CID
         #[arg(short, long)]
         quote: Option<i64>,
+        /// 图片路径（评论仅限一张）
+        #[arg(short, long)]
+        image: Option<std::path::PathBuf>,
     },
 
     /// 点赞帖子
@@ -277,10 +283,12 @@ async fn main() -> anyhow::Result<()> {
         }
 
         // ── Create ──
-        Commands::Post { text, tag, named, fold, reward } => {
-            commands::cmd_post(text, tag, named, fold, reward).await?
+        Commands::Post { text, tag, named, fold, reward, image } => {
+            commands::cmd_post(text, tag, named, fold, reward, image).await?
         }
-        Commands::Reply { pid, text, quote } => commands::cmd_reply(pid, text, quote).await?,
+        Commands::Reply { pid, text, quote, image } => {
+            commands::cmd_reply(pid, text, quote, image).await?
+        }
 
         // ── Interact ──
         Commands::Like { pid } => commands::cmd_like(pid).await?,

@@ -47,6 +47,19 @@ fn truncate_display(s: &str, max_width: usize) -> String {
     result
 }
 
+/// 图片数量提示
+fn media_badge(media_ids: &str) -> String {
+    if media_ids.is_empty() {
+        return String::new();
+    }
+    let count = media_ids.split(',').filter(|s| !s.is_empty()).count();
+    if count == 1 {
+        format!(" {}", "[图片]".magenta())
+    } else {
+        format!(" {}", format!("[{count}张图片]").magenta())
+    }
+}
+
 /// 打印帖子列表中的一项
 pub fn print_hole_item(item: &HoleListItem) {
     print_hole_item_header(item);
@@ -54,7 +67,8 @@ pub fn print_hole_item(item: &HoleListItem) {
     // 正文预览
     let text = item.text.replace('\n', " ");
     let preview = truncate_display(&text, 80);
-    println!("  {}", preview);
+    print!("  {}", preview);
+    println!("{}", media_badge(&item.media_ids));
 
     // 评论预览
     for c in item.comment_list.iter().take(3) {
@@ -150,6 +164,9 @@ pub fn print_hole_detail(h: &Hole, comments: &[Comment], total: Option<i64>) {
     for line in h.text.lines() {
         println!("  {line}");
     }
+    if !h.media_ids.is_empty() {
+        println!("  {}", media_badge(&h.media_ids).trim());
+    }
     println!();
 
     // 分割线
@@ -197,6 +214,9 @@ pub fn print_comment(c: &Comment) {
     for line in c.text.lines() {
         println!("    {line}");
     }
+    if !c.media_ids.is_empty() {
+        println!("    {}", "[图片]".magenta());
+    }
     println!();
 }
 
@@ -205,7 +225,8 @@ pub fn print_hole_simple(h: &Hole) {
     print_hole_header(h);
     let text = h.text.replace('\n', " ");
     let preview = truncate_display(&text, 80);
-    println!("  {}", preview);
+    print!("  {}", preview);
+    println!("{}", media_badge(&h.media_ids));
     println!();
 }
 
