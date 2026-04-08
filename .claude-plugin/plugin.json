@@ -1,0 +1,8 @@
+{
+  "name": "pku-cli",
+  "description": "Skills for PKU CLI tools (treehole, course, campuscard, elective, info-spider)",
+  "version": "1.0.0",
+  "author": {
+    "name": "wjsoj"
+  }
+}

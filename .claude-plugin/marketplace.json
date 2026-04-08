@@ -1,0 +1,13 @@
+{
+  "name": "pku-cli",
+  "owner": {
+    "name": "wjsoj"
+  },
+  "plugins": [
+    {
+      "name": "pku-cli",
+      "source": "./",
+      "description": "Skills for PKU CLI tools"
+    }
+  ]
+}
