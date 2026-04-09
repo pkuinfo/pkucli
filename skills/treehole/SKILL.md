@@ -1,7 +1,7 @@
 ---
 name: treehole
 description: "PKU Treehole (北大树洞) anonymous forum CLI tool built in Rust. Use this skill when working on the treehole crate, debugging treehole commands, adding features to the treehole CLI, understanding the treehole API, or when the user mentions 树洞, treehole, anonymous posts, tree leaves (树叶), or PKU forum. Also use when dealing with IAAA login flow for treehole, JWT callback, SMS verification, or treehole REST API endpoints."
-version: 1.0.0
+version: 2.0.0
 ---
 
 # Treehole - 北大树洞 CLI
@@ -42,10 +42,26 @@ A CLI client for PKU's anonymous discussion platform (PKU Helper Treehole).
 | `score` / `course` / `schedule` | | Academic info |
 | `otp` | | TOTP 2FA management (bind/set/show/clear) |
 
+## Auto-Login for AI Agents
+
+```bash
+# Check session status
+info-auth check
+
+# Auto-login (reads credentials from OS keyring, no password needed)
+treehole login -p
+
+# If SMS verification is needed (first login or periodic):
+PKU_SMS_CODE=123456 treehole login -p
+```
+
+Treehole may require SMS verification on first login or periodically (~30 days). When `PKU_SMS_CODE` env var is set, it auto-confirms sending and submits the code without interactive prompts.
+
 ## Development Conventions
 
 - All user-facing strings are in **Chinese** (prompts, errors, output)
 - Error handling: `anyhow::Result` with `.context("中文描述")`
 - HTTP client uses `redirect(Policy::none())` for manual redirect handling
 - Session persisted to `~/.config/info/treehole/` via `info_common::session::Store`
+- Credentials resolved via `info_common::credential` (keyring → env → interactive)
 - Shared auth from `info-common` crate (see info-common skill for details)

@@ -13,8 +13,8 @@
 use crate::client::TREEHOLE_BASE;
 use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
+use info_common::credential;
 use serde::Deserialize;
-use std::io::{self, Write};
 
 /// 树洞 API 需要短信验证时的错误码
 pub const CODE_SMS_REQUIRED: i64 = 40002;
@@ -71,11 +71,7 @@ async fn handle_sms_verification(
     uuid: &str,
 ) -> Result<()> {
     // 1. 确认发送
-    print!("是否发送短信验证码? [Y/n] ");
-    io::stdout().flush()?;
-    let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-    if input.trim().eq_ignore_ascii_case("n") {
+    if !credential::confirm_send_sms("是否发送短信验证码? [Y/n] ")? {
         return Err(anyhow!("用户取消短信验证"));
     }
 
@@ -97,14 +93,7 @@ async fn handle_sms_verification(
     println!("{} 验证码已发送到绑定手机", "✓".green());
 
     // 3. 输入验证码
-    print!("请输入验证码: ");
-    io::stdout().flush()?;
-    let mut code = String::new();
-    io::stdin().read_line(&mut code)?;
-    let code = code.trim();
-    if code.is_empty() {
-        return Err(anyhow!("验证码不能为空"));
-    }
+    let code = credential::resolve_sms_code("请输入验证码: ")?;
 
     // 4. 提交验证码
     let verify_resp: ApiResponse = client

@@ -11,11 +11,11 @@ use crate::config::ElectiveConfig;
 use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
 use info_common::{
+    credential,
     iaaa::{self, IaaaConfig},
     session::{Session, Store},
 };
 use reqwest_cookie_store::CookieStoreMutex;
-use std::io::{self, Write};
 use std::sync::Arc;
 
 pub const APP_NAME: &str = "elective";
@@ -46,43 +46,20 @@ pub async fn login_with_password(
 
     let mut cfg = ElectiveConfig::load(store.config_dir())?;
 
-    let username = match username {
-        Some(u) => u.to_string(),
-        None => match &cfg.username {
-            Some(u) => {
-                println!("{} 使用已保存的用户名: {}", "[info]".cyan(), u);
-                u.clone()
-            }
-            None => {
-                print!("学号/职工号: ");
-                io::stdout().flush()?;
-                let mut input = String::new();
-                io::stdin().read_line(&mut input)?;
-                input.trim().to_string()
-            }
-        },
-    };
-
-    if username.is_empty() {
-        return Err(anyhow!("用户名不能为空"));
-    }
+    // elective 有自己保存的用户名作为 hint
+    let hint = username
+        .map(|s| s.to_string())
+        .or_else(|| cfg.username.clone());
+    let cred = credential::resolve_credential(hint.as_deref())?;
 
     // 保存用户名以便下次使用
-    cfg.username = Some(username.clone());
+    cfg.username = Some(cred.username.clone());
     cfg.save(store.config_dir())?;
-
-    print!("密码: ");
-    io::stdout().flush()?;
-    let password = rpassword::read_password().context("读取密码失败")?;
-    if password.is_empty() {
-        return Err(anyhow!("密码不能为空"));
-    }
 
     let simple_client = client::build_simple()?;
     let config = iaaa_config();
 
-    let iaaa_token =
-{
+    let iaaa_token = {
         let otp_code = info_common::otp::get_current_otp(store.config_dir())?;
         if otp_code.is_some() {
             println!("{} 已自动填入手机令牌", "[otp]".cyan());
@@ -90,14 +67,14 @@ pub async fn login_with_password(
         iaaa::login_password(
             &simple_client,
             &config,
-            &username,
-            &password,
+            &cred.username,
+            &cred.password,
             otp_code.as_deref(),
         )
         .await?
     };
 
-    complete_sso_login(&store, &iaaa_token.token, dual, &username).await
+    complete_sso_login(&store, &iaaa_token.token, dual, &cred.username).await
 }
 
 /// 扫码登录
@@ -175,8 +152,9 @@ async fn complete_sso_login(
         return Err(anyhow!("SSO 登录失败: HTTP {status}"));
     }
 
-    // 保存会话
+    // 保存会话（cookie-based session，默认 24 小时过期）
     let mut session = Session::new(iaaa_token.to_string());
+    session.expires_at = Some(chrono::Utc::now().timestamp() + 24 * 3600);
     if !username.is_empty() {
         session.uid = Some(username.to_string());
     }

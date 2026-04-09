@@ -10,10 +10,10 @@ use crate::verify;
 use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
 use info_common::{
+    credential,
     iaaa::{self, IaaaConfig},
     session::{Session, Store},
 };
-use std::io::{self, Write};
 
 const APP_NAME: &str = "treehole";
 
@@ -55,27 +55,7 @@ pub async fn login_with_password(username: Option<&str>) -> Result<()> {
     let store = Store::new(APP_NAME)?;
     check_existing_session(&store)?;
 
-    let username = match username {
-        Some(u) => u.to_string(),
-        None => {
-            print!("学号/职工号: ");
-            io::stdout().flush()?;
-            let mut input = String::new();
-            io::stdin().read_line(&mut input)?;
-            input.trim().to_string()
-        }
-    };
-
-    if username.is_empty() {
-        return Err(anyhow!("用户名不能为空"));
-    }
-
-    print!("密码: ");
-    io::stdout().flush()?;
-    let password = rpassword::read_password().context("读取密码失败")?;
-    if password.is_empty() {
-        return Err(anyhow!("密码不能为空"));
-    }
+    let cred = credential::resolve_credential(username)?;
 
     let simple_client = client::build_simple()?;
     let device_uuid = get_device_uuid(&store);
@@ -88,8 +68,8 @@ pub async fn login_with_password(username: Option<&str>) -> Result<()> {
     let iaaa_token = iaaa::login_password(
         &simple_client,
         &config,
-        &username,
-        &password,
+        &cred.username,
+        &cred.password,
         otp_code.as_deref(),
     )
     .await?;

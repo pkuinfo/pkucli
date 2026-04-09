@@ -29,3 +29,17 @@ hmac = "0.12"
 sha1 = "0.10"
 data-encoding = "2"
 rpassword = "5"
+
+# Keyring: 按平台选择 backend
+# Linux: D-Bus Secret Service（GNOME Keyring / KDE Wallet），持久化
+#   不用 linux-keyutils，内核 session keyring 跨进程不持久
+# macOS: Apple Keychain
+# Windows: Windows Credential Manager
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["sync-secret-service"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["windows-native"] }

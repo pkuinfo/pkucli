@@ -6,6 +6,7 @@ members = [
     "crates/course",
     "crates/elective",
     "crates/campuscard",
+    "crates/info-auth",
 ]
 resolver = "2"
 

@@ -1,0 +1,25 @@
+[package]
+name = "info-auth"
+version = "0.1.0"
+edition = "2021"
+description = "PKU 统一凭据管理 CLI — 安全地存储/管理 IAAA 认证凭据"
+
+[[bin]]
+name = "info-auth"
+path = "src/main.rs"
+
+[dependencies]
+info-common = { path = "../common" }
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1"
+colored = "2"
+rpassword = "5"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["sync-secret-service"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["windows-native"] }

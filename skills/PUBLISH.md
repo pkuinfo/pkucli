@@ -32,6 +32,7 @@ clawhub skill publish ./skills/campuscard --slug pku-campuscard --name "PKU Camp
 clawhub skill publish ./skills/elective --slug pku-elective --name "PKU Elective" --version 1.0.0 --tags "pku,elective,cli,rust"
 clawhub skill publish ./skills/info-spider --slug pku-info-spider --name "PKU Info Spider" --version 1.0.0 --tags "pku,wechat,crawler,rust"
 clawhub skill publish ./skills/info-common --slug pku-info-common --name "PKU Info Common" --version 1.0.0 --tags "pku,iaaa,auth,rust"
+clawhub skill publish ./skills/info-auth --slug pku-info-auth --name "PKU Info Auth" --version 1.0.0 --tags "pku,auth,keyring,credential,cli,rust"
 ```
 
 ### 版本更新

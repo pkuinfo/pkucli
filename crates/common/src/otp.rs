@@ -10,9 +10,10 @@ use colored::Colorize;
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
 use sha1::Sha1;
-use std::io::{self, Write};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use crate::credential;
 
 type HmacSha1 = Hmac<Sha1>;
 
@@ -182,28 +183,8 @@ pub async fn bind_otp_interactive(
         .cookie_store(true)
         .build()?;
 
-    // Step 1: 获取用户名密码
-    let username = match username {
-        Some(u) => u.to_string(),
-        None => {
-            print!("学号/职工号: ");
-            io::stdout().flush()?;
-            let mut input = String::new();
-            io::stdin().read_line(&mut input)?;
-            input.trim().to_string()
-        }
-    };
-
-    if username.is_empty() {
-        return Err(anyhow!("用户名不能为空"));
-    }
-
-    print!("密码: ");
-    io::stdout().flush()?;
-    let password = rpassword::read_password().context("读取密码失败")?;
-    if password.is_empty() {
-        return Err(anyhow!("密码不能为空"));
-    }
+    // Step 1: 获取用户名密码（通过统一凭据解析）
+    let cred = credential::resolve_credential(username)?;
 
     // Step 2: auth4Bind 验证身份
     println!("{} 验证身份...", "[1/5]".green());
@@ -211,8 +192,8 @@ pub async fn bind_otp_interactive(
     let auth_resp: AuthBindResp = client
         .post(&auth_url)
         .form(&[
-            ("userName", username.as_str()),
-            ("password", password.as_str()),
+            ("userName", cred.username.as_str()),
+            ("password", cred.password.as_str()),
             ("randCode", ""),
         ])
         .send()
@@ -255,18 +236,14 @@ pub async fn bind_otp_interactive(
     let mobile = sms_resp.mobile_mask.unwrap_or_default();
     println!("  验证码已发送至 {mobile}");
 
-    print!("请输入短信验证码: ");
-    io::stdout().flush()?;
-    let mut sms_code = String::new();
-    io::stdin().read_line(&mut sms_code)?;
-    let sms_code = sms_code.trim();
+    let sms_code = credential::resolve_sms_code("请输入短信验证码: ")?;
 
     // Step 4: 验证短信码
     println!("{} 验证短信码...", "[3/5]".green());
     let check_url = format!("{IAAA_BASE}/pageFlows/identity/otpBind/checkSms.do");
     let check_resp: CheckSmsResp = client
         .post(&check_url)
-        .form(&[("userId", username.as_str()), ("smsCode", sms_code)])
+        .form(&[("userId", cred.username.as_str()), ("smsCode", sms_code.as_str())])
         .send()
         .await
         .context("短信验证请求失败")?

@@ -1,7 +1,7 @@
 ---
 name: campuscard
 description: "PKU Campus Card (校园卡) CLI tool built in Rust. Use this skill when working on the campuscard crate, debugging campus card commands, adding features, or when the user mentions 校园卡, campus card, balance, recharge, payment QR, transaction history, monthly spending, or bdcard.pku.edu.cn. Also use when dealing with Synjones platform auth, berserker-auth flow, mobile User-Agent requirements, or HTTP/1.1 constraints."
-version: 1.0.0
+version: 2.0.0
 ---
 
 # Campuscard - 北大校园卡 CLI
@@ -35,6 +35,16 @@ A CLI client for PKU's campus card system (Synjones platform at bdcard.pku.edu.c
 | `stats` | | Monthly spending statistics |
 | `otp` | | TOTP 2FA management |
 
+## Auto-Login for AI Agents
+
+```bash
+# Check session status
+info-auth check
+
+# Auto-login (reads credentials from OS keyring, no password needed)
+campuscard login -p
+```
+
 ## Development Notes
 
 - The auth chain is the most complex: IAAA → portal → berserker-auth → JWT token
@@ -44,3 +54,4 @@ A CLI client for PKU's campus card system (Synjones platform at bdcard.pku.edu.c
 - All user-facing strings in **Chinese**
 - Error handling: `anyhow::Result` with `.context("中文描述")`
 - Session persisted to `~/.config/info/campuscard/`
+- Credentials resolved via `info_common::credential` (keyring → env → interactive)

@@ -14,6 +14,7 @@ cargo build --release --bin treehole
 cargo build --release --bin course
 cargo build --release --bin campuscard
 cargo build --release --bin elective
+cargo build --release --bin info-auth
 
 # Lint (zero warnings required — do NOT use #[allow(dead_code)] etc.)
 cargo clippy --workspace
@@ -27,6 +28,9 @@ cargo run --bin course -- courses --all
 cargo run --bin campuscard -- login
 cargo run --bin elective -- login
 cargo run --bin info-spider -- search "人民日报"
+cargo run --bin info-auth -- store     # interactive credential setup
+cargo run --bin info-auth -- check     # check all session status
+cargo run --bin info-auth -- status    # check keyring status
 
 # Tests (currently no test files exist)
 cargo test --workspace
@@ -34,14 +38,20 @@ cargo test --workspace
 
 ## Architecture
 
-Six crates in a Cargo workspace. Five are CLI binaries; one is a shared library.
+Seven crates in a Cargo workspace. Six are CLI binaries; one is a shared library.
 
 ```
-info-common (lib)          Shared: IAAA auth, OTP, session/cookie persistence, QR rendering
+info-common (lib)          Shared: IAAA auth, OTP, session/cookie persistence, QR rendering, credential resolution
     ├── iaaa.rs            PKU unified auth (password + QR code login)
     ├── otp.rs             TOTP code generation (RFC 6238, for IAAA 手机令牌)
     ├── session.rs         Session/CookieStore JSON persistence → ~/.config/info/<name>/
+    ├── credential.rs      Unified credential resolution: session → keyring → env → interactive
     └── qr.rs              Terminal QR display (viuer) or system viewer
+
+info-auth (bin)            Credential management CLI — store/clear/check IAAA credentials
+    Uses: info-common for keyring operations
+    Purpose: User runs `info-auth store` once to save credentials to OS keyring;
+             AI Agents then call `treehole login -p` etc. without ever seeing passwords
 
 treehole (bin)             PKU Treehole anonymous forum CLI
     Uses: info-common for IAAA → JWT callback → optional SMS verify
@@ -74,6 +84,13 @@ info-spider (bin)          WeChat Official Account article crawler
 - elective: `app_id="elective"`, redirect to elective SSO endpoint
 
 After IAAA returns a token, each crate has its own `complete_*_login()` that exchanges the token with the target service and saves session+cookies.
+
+**Credential Resolution Order** (in `info_common::credential`):
+1. OS Keyring (`info-pku` service) — set by `info-auth store`
+2. Environment variables (`PKU_USERNAME` + `PKU_PASSWORD`)
+3. Interactive prompt (fallback)
+
+**AI Agent Safety**: Passwords NEVER appear in CLI arguments. `info-auth store` handles all password input interactively. AI Agents should only call `<tool> login -p` which auto-resolves credentials from keyring/env. Use `info-auth check` to verify session status.
 
 **info-spider:** Completely separate WeChat QR login flow. Does not use `info-common`.
 
