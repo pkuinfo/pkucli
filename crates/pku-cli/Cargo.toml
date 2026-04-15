@@ -2,7 +2,7 @@
 name = "pku-cli"
 description = "PKU 命令行工具集 — 树洞、教学网、校园卡、选课、爬虫一站式安装"
 readme = "README.md"
-version = "0.1.2"
+version = "0.1.3"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -55,12 +55,12 @@ name = "portal"
 path = "src/bin/portal.rs"
 
 [dependencies]
-pku-treehole = { version = "0.1.2", path = "../treehole" }
-pku-course = { version = "0.1.1", path = "../course" }
-pku-campuscard = { version = "0.1.1", path = "../campuscard" }
-pku-elective = { version = "0.1.1", path = "../elective" }
-pku-auth = { version = "0.1.0", path = "../info-auth" }
-pkuinfo-spider = { version = "0.1.0", path = "../info-spider" }
+pku-treehole = { version = "0.1.3", path = "../treehole" }
+pku-course = { version = "0.1.2", path = "../course" }
+pku-campuscard = { version = "0.1.2", path = "../campuscard" }
+pku-elective = { version = "0.1.2", path = "../elective" }
+pku-auth = { version = "0.1.1", path = "../info-auth" }
+pkuinfo-spider = { version = "0.1.1", path = "../info-spider" }
 pku-claspider = { version = "0.1.0", path = "../claspider" }
 pku-bdkj = { version = "0.1.0", path = "../bdkj" }
 pku-cwfw = { version = "0.1.0", path = "../cwfw" }

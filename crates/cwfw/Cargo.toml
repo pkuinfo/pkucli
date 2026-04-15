@@ -14,7 +14,7 @@ name = "cwfw"
 path = "src/main.rs"
 
 [dependencies]
-pkuinfo-common = { version = "0.1.1", path = "../common" }
+pkuinfo-common = { version = "0.1.2", path = "../common" }
 clap = { version = "4.5", features = ["derive"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 reqwest = { version = "0.12", features = ["cookies", "gzip", "brotli", "json"] }
