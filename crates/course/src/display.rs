@@ -1,8 +1,8 @@
 //! 终端格式化输出
 
 use crate::api::{
-    self, AssignmentDetail, AssignmentSummary, ContentItem, ContentType, CourseEntry, CourseInfo,
-    VideoInfo,
+    self, Announcement, AnnouncementSummary, AssignmentDetail, AssignmentSummary, ContentItem,
+    ContentType, CourseEntry, CourseInfo, VideoInfo,
 };
 use colored::Colorize;
 
@@ -242,4 +242,41 @@ fn truncate_display(s: &str, max_width: usize) -> String {
         }
     }
     result
+}
+
+/// 打印单条公告
+pub fn print_announcement(ann: &Announcement) {
+    println!("  ──────────────────────────────────────────────────────────────");
+    println!("  {}", ann.title.bold());
+    if !ann.date.is_empty() {
+        println!("  {}", ann.date.dimmed());
+    }
+    if !ann.author.is_empty() {
+        println!("  {}", format!("发布者: {}", ann.author).dimmed());
+    }
+    if !ann.body.is_empty() {
+        let body = truncate_display(&ann.body, 200);
+        println!("  {}", body);
+    }
+}
+
+/// 打印跨课程公告汇总
+pub fn print_announcement_summary(summary: &AnnouncementSummary) {
+    let ann = &summary.announcement;
+    println!("  ──────────────────────────────────────────────────────────────");
+    println!(
+        "  {} {}",
+        format!("[{}]", summary.course_name).cyan(),
+        ann.title.bold(),
+    );
+    if !ann.date.is_empty() {
+        println!("  {}", ann.date.dimmed());
+    }
+    if !ann.author.is_empty() {
+        println!("  {}", format!("发布者: {}", ann.author).dimmed());
+    }
+    if !ann.body.is_empty() {
+        let body = truncate_display(&ann.body, 200);
+        println!("  {}", body);
+    }
 }

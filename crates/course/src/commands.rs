@@ -555,6 +555,80 @@ pub async fn cmd_video_download(
     Ok(())
 }
 
+// ─── announcements ────────────────────────────────────────────
+
+pub async fn cmd_announcements(course_id: Option<&str>) -> Result<()> {
+    let api = CourseApi::from_session()?;
+
+    match course_id {
+        Some(cid) => {
+            let course = resolve_course_info(&api, cid).await?;
+            let announcements = api.list_announcements(&course.id).await?;
+            if announcements.is_empty() {
+                println!("{} {} 暂无公告", "○".dimmed(), course.name());
+                return Ok(());
+            }
+            println!();
+            println!(
+                "{} {} (共 {} 条)",
+                "──".bold(),
+                course.name().bold(),
+                announcements.len()
+            );
+            for ann in &announcements {
+                display::print_announcement(ann);
+            }
+        }
+        None => {
+            let courses = api.list_courses(true).await?;
+            if courses.is_empty() {
+                println!("{}", "暂无课程".dimmed());
+                return Ok(());
+            }
+
+            let pb = indicatif::ProgressBar::new(courses.len() as u64);
+            pb.set_style(
+                indicatif::ProgressStyle::default_bar()
+                    .template("{prefix} [{bar:30}] {pos}/{len} {msg}")
+                    .unwrap()
+                    .progress_chars("=> "),
+            );
+            pb.set_prefix("扫描公告");
+
+            let mut all_announcements = Vec::new();
+            for course in &courses {
+                pb.set_message(course.name().to_string());
+                match api.list_announcements_for_course(course).await {
+                    Ok(anns) => all_announcements.extend(anns),
+                    Err(e) => {
+                        tracing::warn!("获取 {} 的公告失败: {e:#}", course.name());
+                    }
+                }
+                pb.inc(1);
+            }
+            pb.finish_and_clear();
+
+            if all_announcements.is_empty() {
+                println!("{}", "当前学期暂无公告".dimmed());
+                return Ok(());
+            }
+
+            println!();
+            println!(
+                "{} 共 {} 条公告",
+                "──".bold(),
+                all_announcements.len()
+            );
+            for summary in &all_announcements {
+                display::print_announcement_summary(summary);
+            }
+        }
+    }
+
+    println!();
+    Ok(())
+}
+
 // ─── browse ────────────────────────────────────────────────────
 
 pub async fn cmd_browse(course_id: Option<&str>) -> Result<()> {

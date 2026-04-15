@@ -9,7 +9,7 @@
 use crate::client::{self, PORTAL_BASE};
 use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
-use info_common::{
+use pkuinfo_common::{
     credential,
     iaaa::{self, IaaaConfig},
     session::{Session, Store},
@@ -39,7 +39,7 @@ pub async fn login_with_password(username: Option<&str>) -> Result<()> {
     let config = iaaa_config();
 
     let iaaa_token = {
-        let otp_code = info_common::otp::get_current_otp(store.config_dir())?;
+        let otp_code = pkuinfo_common::otp::get_current_otp(store.config_dir())?;
         if otp_code.is_some() {
             println!("{} 已自动填入手机令牌", "[otp]".cyan());
         }
@@ -57,7 +57,7 @@ pub async fn login_with_password(username: Option<&str>) -> Result<()> {
 }
 
 /// 扫码登录
-pub async fn login_with_qrcode(qr_mode: info_common::qr::QrDisplayMode) -> Result<()> {
+pub async fn login_with_qrcode(qr_mode: pkuinfo_common::qr::QrDisplayMode) -> Result<()> {
     let store = Store::new(APP_NAME)?;
     check_existing_session(&store)?;
 

@@ -1,6 +1,6 @@
 ---
 name: elective
-description: "PKU Course Selection (选课网) CLI tool built in Rust. Use this skill when working on the elective crate, debugging elective commands, adding features, or when the user mentions 选课, elective, course selection, auto-enroll, CAPTCHA solving, dual-degree, or elective.pku.edu.cn. Also use when dealing with CAPTCHA recognition backends (utool/ttshitu/yunma), automated course enrollment loops, or elective SSO callback."
+description: "PKU Course Selection (选课网) CLI tool built in Rust. Use this skill when working on the elective crate, debugging elective commands, adding features, or when the user mentions 选课, elective, course selection, auto-enroll, CAPTCHA solving, dual-degree, or elective.pku.edu.cn. Also use when dealing with CAPTCHA recognition backends (utool/ttshitu/yunma), automated course enrollment loops, or elective SSO callback. **NOT for general course schedule / 课表 / 这学期上什么课 questions — use the `treehole` skill (`treehole course`) instead, which gives a unified weekly grid with 主修+辅修+双学位. The `elective show` command only sees one program at a time and easily misses courses from the other program for dual-degree students.**"
 version: 2.0.0
 ---
 

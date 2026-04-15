@@ -1,15 +1,21 @@
 [package]
-name = "campuscard"
-version = "0.1.0"
-edition = "2021"
+name = "pku-campuscard"
 description = "北大校园卡 CLI 客户端"
+readme = "README.md"
+version = "0.1.1"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["pku", "campus-card", "cli", "payment"]
+categories = ["command-line-utilities"]
 
 [[bin]]
 name = "campuscard"
 path = "src/main.rs"
 
 [dependencies]
-info-common = { path = "../common" }
+pkuinfo-common = { version = "0.1.1", path = "../common" }
 clap = { version = "4.5", features = ["derive"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 reqwest = { version = "0.12", features = ["cookies", "gzip", "brotli", "json"] }
@@ -25,6 +31,7 @@ chrono = { version = "0.4", features = ["serde"] }
 rand = "0.8"
 rpassword = "5"
 sha2 = "0.10"
-qrcode = { version = "0.14", default-features = false }
+qrcode = { version = "0.14", default-features = false, features = ["image"] }
+image = "0.25"
 regex = "1"
 serde_urlencoded = "0.7"

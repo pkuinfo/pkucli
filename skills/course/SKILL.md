@@ -1,6 +1,6 @@
 ---
 name: course
-description: "PKU Teaching Platform (北大教学网/Blackboard Learn) CLI tool built in Rust. Use this skill when working on the course crate, debugging course commands, adding features to the teaching platform CLI, or when the user mentions 教学网, Blackboard, course downloads, assignment submission, video downloads, or PKU teaching. Also use when dealing with HTML scraping via the scraper crate, Blackboard SSO callback, or multipart file uploads."
+description: "PKU Teaching Platform (北大教学网/Blackboard Learn) CLI tool built in Rust. Use this skill when working on the course crate, debugging course commands, adding features to the teaching platform CLI, or when the user mentions 教学网, Blackboard, course downloads, assignment submission, video downloads, or PKU teaching. Also use when dealing with HTML scraping via the scraper crate, Blackboard SSO callback, or multipart file uploads. **NOT for course schedule / 课表 / weekly timetable questions — for those use the `treehole` skill (`treehole course`), which is the canonical source and includes 辅修/双学位.** This `course` crate only deals with the Blackboard teaching platform (assignments, files, recordings, announcements)."
 version: 2.0.0
 ---
 

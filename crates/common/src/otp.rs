@@ -7,10 +7,13 @@
 
 use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
+use cookie_store::CookieStore;
 use hmac::{Hmac, Mac};
+use reqwest_cookie_store::CookieStoreMutex;
 use serde::{Deserialize, Serialize};
 use sha1::Sha1;
 use std::path::Path;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::credential;
@@ -166,6 +169,120 @@ struct UserBindResp {
     err_msg: Option<String>,
 }
 
+const OTP_PENDING_STATE_FILE: &str = "otp_pending.json";
+const OTP_PENDING_COOKIES_FILE: &str = "otp_pending_cookies.json";
+
+#[derive(Serialize, Deserialize)]
+struct OtpPendingState {
+    username: String,
+}
+
+fn pending_state_path(config_dir: &Path) -> std::path::PathBuf {
+    config_dir.join(OTP_PENDING_STATE_FILE)
+}
+
+fn pending_cookies_path(config_dir: &Path) -> std::path::PathBuf {
+    config_dir.join(OTP_PENDING_COOKIES_FILE)
+}
+
+fn save_pending(
+    config_dir: &Path,
+    username: &str,
+    cookie_store: &Arc<CookieStoreMutex>,
+) -> Result<()> {
+    std::fs::create_dir_all(config_dir)?;
+
+    let state = OtpPendingState {
+        username: username.to_string(),
+    };
+    let state_json = serde_json::to_vec_pretty(&state)?;
+    std::fs::write(pending_state_path(config_dir), state_json)
+        .context("保存 OTP 绑定状态失败")?;
+
+    let cookies_path = pending_cookies_path(config_dir);
+    let file = std::fs::File::create(&cookies_path)
+        .with_context(|| format!("写入 cookie 文件失败: {}", cookies_path.display()))?;
+    let guard = cookie_store
+        .lock()
+        .map_err(|e| anyhow!("锁定 cookie store 失败: {e}"))?;
+    let mut writer = std::io::BufWriter::new(file);
+    cookie_store::serde::json::save_incl_expired_and_nonpersistent(&guard, &mut writer)
+        .map_err(|e| anyhow!("序列化 cookie 文件失败: {e}"))?;
+    Ok(())
+}
+
+fn load_pending(config_dir: &Path) -> Result<(String, Arc<CookieStoreMutex>)> {
+    let state_path = pending_state_path(config_dir);
+    if !state_path.exists() {
+        return Err(anyhow!(
+            "未找到 OTP 绑定会话。请先运行 `otp bind --send` 发送短信验证码"
+        ));
+    }
+
+    let state_bytes = std::fs::read(&state_path).context("读取 OTP 绑定状态失败")?;
+    let state: OtpPendingState =
+        serde_json::from_slice(&state_bytes).context("解析 OTP 绑定状态失败")?;
+
+    let cookies_path = pending_cookies_path(config_dir);
+    let file = std::fs::File::open(&cookies_path)
+        .with_context(|| format!("打开 cookie 文件失败: {}", cookies_path.display()))?;
+    let store = cookie_store::serde::json::load(std::io::BufReader::new(file))
+        .map_err(|e| anyhow!("解析 cookie 文件失败: {e}"))?;
+
+    Ok((state.username, Arc::new(CookieStoreMutex::new(store))))
+}
+
+fn clear_pending(config_dir: &Path) {
+    let _ = std::fs::remove_file(pending_state_path(config_dir));
+    let _ = std::fs::remove_file(pending_cookies_path(config_dir));
+}
+
+fn build_bind_client(cookie_store: Arc<CookieStoreMutex>) -> Result<reqwest::Client> {
+    reqwest::Client::builder()
+        .cookie_provider(cookie_store)
+        .build()
+        .context("构建 HTTP 客户端失败")
+}
+
+/// 阶段 1：认证身份并发送短信验证码，保存会话到本地
+///
+/// 适用于 AI Agent 场景：先调用此函数触发短信，等用户告知验证码后，
+/// 再调用 `bind_otp_verify` 完成绑定。
+pub async fn bind_otp_send_sms(config_dir: &Path, username: Option<&str>) -> Result<()> {
+    let cookie_store = Arc::new(CookieStoreMutex::new(CookieStore::default()));
+    let client = build_bind_client(cookie_store.clone())?;
+
+    let cred = credential::resolve_credential(username)?;
+    auth_and_send_sms(&client, &cred.username, &cred.password).await?;
+
+    save_pending(config_dir, &cred.username, &cookie_store)?;
+
+    println!();
+    println!(
+        "{} 短信已发送，会话已保存。收到验证码后运行:",
+        "[i]".cyan()
+    );
+    println!("  {} --verify <CODE>", "otp bind".bold());
+    Ok(())
+}
+
+/// 阶段 2：用已保存的会话和短信验证码完成 OTP 绑定
+///
+/// 必须先通过 `bind_otp_send_sms` 创建绑定会话。
+pub async fn bind_otp_verify(config_dir: &Path, sms_code: &str) -> Result<OtpConfig> {
+    let (username, cookie_store) = load_pending(config_dir)?;
+    let client = build_bind_client(cookie_store)?;
+
+    let result = verify_sms_and_finalize(&client, config_dir, &username, sms_code).await;
+
+    // 仅在成功时清理 pending 状态；失败时保留，方便用户用新的 code 重试
+    if result.is_ok() {
+        clear_pending(config_dir);
+    }
+
+    result
+}
+
 /// 完整的 OTP 绑定流程（交互式）
 ///
 /// 1. 用户名+密码 → auth4Bind
@@ -178,22 +295,30 @@ pub async fn bind_otp_interactive(
     config_dir: &Path,
     username: Option<&str>,
 ) -> Result<OtpConfig> {
-    // 使用独立的 cookie client（绑定流程需要自己的会话）
-    let client = reqwest::Client::builder()
-        .cookie_store(true)
-        .build()?;
+    let cookie_store = Arc::new(CookieStoreMutex::new(CookieStore::default()));
+    let client = build_bind_client(cookie_store)?;
 
-    // Step 1: 获取用户名密码（通过统一凭据解析）
     let cred = credential::resolve_credential(username)?;
+    auth_and_send_sms(&client, &cred.username, &cred.password).await?;
 
-    // Step 2: auth4Bind 验证身份
+    let sms_code = credential::resolve_sms_code("请输入短信验证码: ")?;
+    verify_sms_and_finalize(&client, config_dir, &cred.username, &sms_code).await
+}
+
+/// 内部：执行身份验证并发送短信验证码（Steps 1-2）
+async fn auth_and_send_sms(
+    client: &reqwest::Client,
+    username: &str,
+    password: &str,
+) -> Result<()> {
+    // Step 1: auth4Bind 验证身份
     println!("{} 验证身份...", "[1/5]".green());
     let auth_url = format!("{IAAA_BASE}/auth4Bind.do");
     let auth_resp: AuthBindResp = client
         .post(&auth_url)
         .form(&[
-            ("userName", cred.username.as_str()),
-            ("password", cred.password.as_str()),
+            ("userName", username),
+            ("password", password),
             ("randCode", ""),
         ])
         .send()
@@ -211,7 +336,7 @@ pub async fn bind_otp_interactive(
         return Err(anyhow!("身份验证失败: {msg}"));
     }
 
-    // Step 3: 发送短信验证码
+    // Step 2: 发送短信验证码
     println!("{} 发送短信验证码...", "[2/5]".green());
     let sms_url = format!(
         "{IAAA_BASE}/pageFlows/identity/otpBind/sendSMSCodeBind.do?_rand={}",
@@ -235,15 +360,22 @@ pub async fn bind_otp_interactive(
 
     let mobile = sms_resp.mobile_mask.unwrap_or_default();
     println!("  验证码已发送至 {mobile}");
+    Ok(())
+}
 
-    let sms_code = credential::resolve_sms_code("请输入短信验证码: ")?;
-
-    // Step 4: 验证短信码
+/// 内部：验证短信码、获取 secret、完成绑定、保存配置（Steps 3-6）
+async fn verify_sms_and_finalize(
+    client: &reqwest::Client,
+    config_dir: &Path,
+    username: &str,
+    sms_code: &str,
+) -> Result<OtpConfig> {
+    // Step 3: 验证短信码
     println!("{} 验证短信码...", "[3/5]".green());
     let check_url = format!("{IAAA_BASE}/pageFlows/identity/otpBind/checkSms.do");
     let check_resp: CheckSmsResp = client
         .post(&check_url)
-        .form(&[("userId", cred.username.as_str()), ("smsCode", sms_code.as_str())])
+        .form(&[("userId", username), ("smsCode", sms_code)])
         .send()
         .await
         .context("短信验证请求失败")?

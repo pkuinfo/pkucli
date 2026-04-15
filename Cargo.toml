@@ -7,8 +7,20 @@ members = [
     "crates/elective",
     "crates/campuscard",
     "crates/info-auth",
+    "crates/cwfw",
+    "crates/pku-cli",
+    "crates/claspider",
+    "crates/bdkj",
+    "crates/portal",
 ]
 resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/pkuinfo/pkucli"
+authors = ["pkuinfo team"]
 
 [profile.release]
 opt-level = 3

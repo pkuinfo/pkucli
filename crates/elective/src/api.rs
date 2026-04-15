@@ -11,7 +11,7 @@ use scraper::{Html, Selector};
 
 use crate::client::{self, ELECTIVE_BASE};
 use crate::config::ElectiveConfig;
-use info_common::session::Store;
+use pkuinfo_common::session::Store;
 
 use crate::login::APP_NAME;
 

@@ -2,7 +2,7 @@
 //!
 //! 配置存储在 ~/.config/info/elective/config.toml
 
-use crate::captcha::CaptchaConfig;
+use pkuinfo_common::captcha::CaptchaConfig;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;

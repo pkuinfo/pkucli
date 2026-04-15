@@ -27,7 +27,7 @@ pub async fn cmd_info() -> Result<()> {
 }
 
 /// 显示付款码
-pub async fn cmd_pay() -> Result<()> {
+pub async fn cmd_pay(output: Option<&str>) -> Result<()> {
     let jwt = login::load_jwt()?;
     let api = CardApi::new(&jwt)?;
 
@@ -120,15 +120,25 @@ pub async fn cmd_pay() -> Result<()> {
     println!("  余额: {} 元", format!("{balance:.2}").yellow());
     println!();
 
-    // 渲染付款码 QR（与网页端一致：L 级纠错，无边距）
-    render_qr_paycode(barcode)?;
+    if let Some(path) = output {
+        // 导出为 PNG 图片
+        save_qr_paycode_png(barcode, path)?;
+        println!(
+            "  {} 付款码已保存到 {}",
+            "✓".green(),
+            path.cyan(),
+        );
+    } else {
+        // 渲染付款码 QR（与网页端一致：L 级纠错，无边距）
+        render_qr_paycode(barcode)?;
 
-    println!();
-    println!("  {}", "将此二维码出示给 POS 机扫描即可付款".dimmed());
-    println!(
-        "  {}",
-        "付款码每 60 秒刷新，如过期请重新运行 `campuscard pay`".dimmed()
-    );
+        println!();
+        println!("  {}", "将此二维码出示给 POS 机扫描即可付款".dimmed());
+        println!(
+            "  {}",
+            "付款码每 60 秒刷新，如过期请重新运行 `campuscard pay`".dimmed()
+        );
+    }
     println!();
 
     Ok(())
@@ -277,6 +287,17 @@ fn last_day_of_month(year: i32, month: u32) -> NaiveDate {
         .unwrap()
         .pred_opt()
         .unwrap()
+}
+
+/// 将付款码保存为 PNG 图片
+fn save_qr_paycode_png(content: &str, path: &str) -> Result<()> {
+    use qrcode::EcLevel;
+
+    let code = qrcode::QrCode::with_error_correction_level(content.as_bytes(), EcLevel::L)
+        .map_err(|e| anyhow!("生成二维码失败: {e}"))?;
+    let image = code.render::<image::Luma<u8>>().quiet_zone(true).build();
+    image.save(path).context("保存付款码图片失败")?;
+    Ok(())
 }
 
 /// 渲染付款码 QR（与网页端 vue-qr 一致：correctLevel=L，margin=0）

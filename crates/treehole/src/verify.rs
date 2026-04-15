@@ -13,7 +13,7 @@
 use crate::client::TREEHOLE_BASE;
 use anyhow::{anyhow, Context, Result};
 use colored::Colorize;
-use info_common::credential;
+use pkuinfo_common::credential;
 use serde::Deserialize;
 
 /// 树洞 API 需要短信验证时的错误码
@@ -75,7 +75,7 @@ async fn handle_sms_verification(
         return Err(anyhow!("用户取消短信验证"));
     }
 
-    // 2. 发送验证码
+    // 2. 发送验证码（容忍"还未过期"错误，此时沿用已发送的那条）
     let send_resp: ApiResponse = client
         .post(format!("{TREEHOLE_BASE}/chapi/api/jwt_send_msg"))
         .header("authorization", format!("Bearer {jwt_token}"))
@@ -87,10 +87,17 @@ async fn handle_sms_verification(
         .json()
         .await?;
 
-    if !send_resp.success {
+    if send_resp.success {
+        println!("{} 验证码已发送到绑定手机", "✓".green());
+    } else if send_resp.message.contains("还未过期") || send_resp.message.contains("未过期") {
+        println!(
+            "{} 已有未过期的验证码（{}），请直接输入",
+            "[i]".cyan(),
+            send_resp.message
+        );
+    } else {
         return Err(anyhow!("发送短信失败: {}", send_resp.message));
     }
-    println!("{} 验证码已发送到绑定手机", "✓".green());
 
     // 3. 输入验证码
     let code = credential::resolve_sms_code("请输入验证码: ")?;

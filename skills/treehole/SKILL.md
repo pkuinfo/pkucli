@@ -1,6 +1,6 @@
 ---
 name: treehole
-description: "PKU Treehole (北大树洞) anonymous forum CLI tool built in Rust. Use this skill when working on the treehole crate, debugging treehole commands, adding features to the treehole CLI, understanding the treehole API, or when the user mentions 树洞, treehole, anonymous posts, tree leaves (树叶), or PKU forum. Also use when dealing with IAAA login flow for treehole, JWT callback, SMS verification, or treehole REST API endpoints."
+description: "PKU Treehole (北大树洞) anonymous forum CLI tool built in Rust. Use this skill when working on the treehole crate, debugging treehole commands, adding features to the treehole CLI, understanding the treehole API, or when the user mentions 树洞, treehole, anonymous posts, tree leaves (树叶), or PKU forum. Also use when dealing with IAAA login flow for treehole, JWT callback, SMS verification, or treehole REST API endpoints. **Also use whenever the user asks about their course schedule / 课表 / 这学期上什么课 / weekly schedule / academic calendar / 本周日程 — the treehole API exposes these via `treehole course`, `treehole schedule`, `treehole academic-cal`, `treehole activity-cal`, and they are the canonical source. Do NOT use the `course` (Blackboard) or `elective` crate to answer schedule questions — `course` is for teaching-platform content (assignments/files) and `elective` only sees the major program (misses 辅修/双学位)."
 version: 2.0.0
 ---
 
@@ -39,7 +39,10 @@ A CLI client for PKU's anonymous discussion platform (PKU Helper Treehole).
 | `follow` / `unfollow` | | Follow posts |
 | `msg` / `read` | | Notifications |
 | `me` | | Profile + own posts |
-| `score` / `course` / `schedule` | | Academic info |
+| `score` | | Grade query (with color rendering) |
+| `course` | | **Weekly course schedule (canonical source — includes 主修 + 辅修 + 双学位)** |
+| `schedule` | | This week's day-by-day schedule |
+| `academic-cal` / `activity-cal` | | Academic / activity calendar |
 | `otp` | | TOTP 2FA management (bind/set/show/clear) |
 
 ## Auto-Login for AI Agents

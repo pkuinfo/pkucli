@@ -12,7 +12,7 @@ use std::path::Path;
 
 use crate::client::{self, COURSE_BASE};
 use crate::multipart::MultipartBuilder;
-use info_common::session::Store;
+use pkuinfo_common::session::Store;
 
 const APP_NAME: &str = "course";
 
@@ -142,6 +142,28 @@ pub struct VideoInfo {
     pub course_name: String,
     /// 哈希 ID
     pub hash_id: String,
+}
+
+/// 课程公告
+#[derive(Debug, Clone)]
+pub struct Announcement {
+    /// 公告标题
+    pub title: String,
+    /// 公告正文
+    pub body: String,
+    /// 发布日期（原始字符串）
+    pub date: String,
+    /// 发布者
+    pub author: String,
+}
+
+/// 跨课程公告汇总（含所属课程名）
+#[derive(Debug, Clone)]
+pub struct AnnouncementSummary {
+    /// 所属课程名称
+    pub course_name: String,
+    /// 公告详情
+    pub announcement: Announcement,
 }
 
 /// 视频下载所需的详细信息
@@ -944,6 +966,105 @@ impl CourseApi {
         }
 
         Ok(())
+    }
+
+    // ─── 公告相关 ──────────────────────────────────────────────────
+
+    /// 获取指定课程的公告列表
+    pub async fn list_announcements(&self, course_id: &str) -> Result<Vec<Announcement>> {
+        let dom = self.get_course_page(course_id).await?;
+
+        // 真实 Blackboard Learn 公告 DOM（通过 Chrome DevTools 验证）:
+        //   <ul id="announcementList">
+        //     <li class="clearfix" id="_93301_1">
+        //       <h3 class="item">标题</h3>
+        //       <div class="details">
+        //         <p><span>发布时间: 2025年8月27日 ...</span></p>
+        //         <p><div class="vtbegenerated">正文</div></p>
+        //       </div>
+        //       <div class="announcementInfo">
+        //         <p><span>发帖者:</span> 作者</p>
+        //         <p><span>发布至:</span> 课程名</p>
+        //       </div>
+        //     </li>
+        //   </ul>
+
+        let list_sel = Selector::parse("#announcementList > li").unwrap();
+        let title_sel = Selector::parse("h3").unwrap();
+        let body_sel = Selector::parse(".vtbegenerated").unwrap();
+        let details_sel = Selector::parse(".details").unwrap();
+        let info_sel = Selector::parse(".announcementInfo").unwrap();
+
+        let mut announcements = Vec::new();
+
+        for li in dom.select(&list_sel) {
+            let title = li
+                .select(&title_sel)
+                .next()
+                .map(|el| el.text().collect::<String>())
+                .unwrap_or_default()
+                .trim()
+                .to_string();
+
+            if title.is_empty() {
+                continue;
+            }
+
+            let body = li
+                .select(&body_sel)
+                .next()
+                .map(|el| el.text().collect::<String>().trim().to_string())
+                .unwrap_or_default();
+
+            // 日期：.details 内第一个 <p> 的文本，格式 "发布时间: ..."
+            let date = li
+                .select(&details_sel)
+                .next()
+                .and_then(|el| {
+                    let text = el.text().collect::<String>();
+                    text.split("发布时间:")
+                        .nth(1)
+                        .map(|s| s.lines().next().unwrap_or("").trim().to_string())
+                })
+                .unwrap_or_default();
+
+            // 作者：.announcementInfo 内 "发帖者:" 后的文本
+            let author = li
+                .select(&info_sel)
+                .next()
+                .and_then(|el| {
+                    let text = el.text().collect::<String>();
+                    text.split("发帖者:")
+                        .nth(1)
+                        .and_then(|s| s.lines().next())
+                        .map(|s| s.trim().to_string())
+                })
+                .unwrap_or_default();
+
+            announcements.push(Announcement {
+                title,
+                body,
+                date,
+                author,
+            });
+        }
+
+        Ok(announcements)
+    }
+
+    /// 获取某门课程的公告列表，并附带课程名称
+    pub async fn list_announcements_for_course(
+        &self,
+        course: &CourseInfo,
+    ) -> Result<Vec<AnnouncementSummary>> {
+        let announcements = self.list_announcements(&course.id).await?;
+        Ok(announcements
+            .into_iter()
+            .map(|a| AnnouncementSummary {
+                course_name: course.name().to_string(),
+                announcement: a,
+            })
+            .collect())
     }
 
     // ─── 课程回放相关 ─────────────────────────────────────────────

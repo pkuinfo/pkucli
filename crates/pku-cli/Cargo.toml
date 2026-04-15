@@ -1,0 +1,70 @@
+[package]
+name = "pku-cli"
+description = "PKU 命令行工具集 — 树洞、教学网、校园卡、选课、爬虫一站式安装"
+readme = "README.md"
+version = "0.1.2"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["pku", "cli", "university", "tools"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "pku"
+path = "src/main.rs"
+
+[[bin]]
+name = "treehole"
+path = "src/bin/treehole.rs"
+
+[[bin]]
+name = "course"
+path = "src/bin/course.rs"
+
+[[bin]]
+name = "campuscard"
+path = "src/bin/campuscard.rs"
+
+[[bin]]
+name = "elective"
+path = "src/bin/elective.rs"
+
+[[bin]]
+name = "info-auth"
+path = "src/bin/info-auth.rs"
+
+[[bin]]
+name = "info-spider"
+path = "src/bin/info-spider.rs"
+
+[[bin]]
+name = "claspider"
+path = "src/bin/claspider.rs"
+
+[[bin]]
+name = "bdkj"
+path = "src/bin/bdkj.rs"
+
+[[bin]]
+name = "cwfw"
+path = "src/bin/cwfw.rs"
+
+[[bin]]
+name = "portal"
+path = "src/bin/portal.rs"
+
+[dependencies]
+pku-treehole = { version = "0.1.2", path = "../treehole" }
+pku-course = { version = "0.1.1", path = "../course" }
+pku-campuscard = { version = "0.1.1", path = "../campuscard" }
+pku-elective = { version = "0.1.1", path = "../elective" }
+pku-auth = { version = "0.1.0", path = "../info-auth" }
+pkuinfo-spider = { version = "0.1.0", path = "../info-spider" }
+pku-claspider = { version = "0.1.0", path = "../claspider" }
+pku-bdkj = { version = "0.1.0", path = "../bdkj" }
+pku-cwfw = { version = "0.1.0", path = "../cwfw" }
+pku-portal = { version = "0.1.0", path = "../portal" }
+clap = { version = "4.5", features = ["derive"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+anyhow = "1"

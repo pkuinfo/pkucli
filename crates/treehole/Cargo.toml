@@ -1,15 +1,21 @@
 [package]
-name = "treehole"
-version = "0.1.0"
-edition = "2021"
+name = "pku-treehole"
 description = "北大树洞 CLI 客户端"
+readme = "README.md"
+version = "0.1.2"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["pku", "treehole", "cli", "forum"]
+categories = ["command-line-utilities"]
 
 [[bin]]
 name = "treehole"
 path = "src/main.rs"
 
 [dependencies]
-info-common = { path = "../common" }
+pkuinfo-common = { version = "0.1.1", path = "../common" }
 clap = { version = "4.5", features = ["derive"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "fs", "signal"] }
 reqwest = { version = "0.12", features = ["cookies", "gzip", "brotli", "json", "multipart"] }

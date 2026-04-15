@@ -1,0 +1,32 @@
+[package]
+name = "pku-bdkj"
+description = "北大空间（学术研讨教室预约）CLI 客户端"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["pku", "bdkj", "classroom", "cli"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "bdkj"
+path = "src/main.rs"
+
+[lib]
+name = "pku_bdkj"
+path = "src/lib.rs"
+
+[dependencies]
+pkuinfo-common = { version = "0.1.1", path = "../common" }
+clap = { version = "4.5", features = ["derive"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+reqwest = { version = "0.12", features = ["cookies", "gzip", "brotli", "json"] }
+reqwest_cookie_store = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+colored = "2"
+chrono = { version = "0.4", features = ["serde"] }
+scraper = "0.20"
+regex = "1"

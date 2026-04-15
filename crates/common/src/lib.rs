@@ -1,3 +1,4 @@
+pub mod captcha;
 pub mod credential;
 pub mod iaaa;
 pub mod otp;

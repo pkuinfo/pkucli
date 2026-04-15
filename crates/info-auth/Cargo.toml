@@ -1,15 +1,21 @@
 [package]
-name = "info-auth"
-version = "0.1.0"
-edition = "2021"
+name = "pku-auth"
 description = "PKU 统一凭据管理 CLI — 安全地存储/管理 IAAA 认证凭据"
+readme = "README.md"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["pku", "auth", "keyring", "credential"]
+categories = ["command-line-utilities", "authentication"]
 
 [[bin]]
 name = "info-auth"
 path = "src/main.rs"
 
 [dependencies]
-info-common = { path = "../common" }
+pkuinfo-common = { version = "0.1.0", path = "../common" }
 clap = { version = "4.5", features = ["derive"] }
 anyhow = "1"
 colored = "2"

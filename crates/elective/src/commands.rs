@@ -1,13 +1,13 @@
 //! 所有子命令的实现
 
 use crate::api::{ElectiveApi, ValidationResult};
-use crate::captcha::{self, CaptchaConfig};
+use pkuinfo_common::captcha::{self, CaptchaConfig};
 use crate::config::{AutoElectCourse, ElectiveConfig};
 use crate::display;
 use crate::login::APP_NAME;
 use anyhow::{anyhow, Result};
 use colored::Colorize;
-use info_common::session::Store;
+use pkuinfo_common::session::Store;
 
 // ─── show ─────────────────────────────────────────────────────
 

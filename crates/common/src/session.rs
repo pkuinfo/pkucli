@@ -118,7 +118,7 @@ impl Store {
             .lock()
             .map_err(|e| anyhow::anyhow!("锁定 cookie store 失败: {e}"))?;
         let mut writer = BufWriter::new(file);
-        cookie_store::serde::json::save(&guard, &mut writer)
+        cookie_store::serde::json::save_incl_expired_and_nonpersistent(&guard, &mut writer)
             .map_err(|e| anyhow::anyhow!("序列化 cookie 文件失败: {e}"))?;
         Ok(())
     }

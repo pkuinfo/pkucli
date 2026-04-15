@@ -2,7 +2,7 @@
 
 use crate::client::{self, TREEHOLE_BASE};
 use anyhow::{anyhow, Context, Result};
-use info_common::session::Store;
+use pkuinfo_common::session::Store;
 use reqwest::Client;
 use reqwest::multipart;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -267,6 +267,7 @@ pub struct TreeholeApi {
     client: Client,
     token: String,
     uuid: String,
+    config_dir: std::path::PathBuf,
 }
 
 impl TreeholeApi {
@@ -301,7 +302,116 @@ impl TreeholeApi {
             client,
             token: session.token,
             uuid,
+            config_dir: store.config_dir().to_path_buf(),
         })
+    }
+
+    /// 课程端点的二次授权（成绩 / 课表等返回 code 40077 时调用）
+    ///
+    /// 服务端要求用手机令牌或短信验证码换取短期授权码。本方法的策略：
+    ///
+    /// 1. 优先使用本地已绑定的 TOTP secret 自动生成 OTP（无需用户交互）
+    /// 2. 若未绑定 OTP，回退到短信验证：
+    ///    - 调用 `course/send_get_token_message` 发送短信
+    ///    - 从 stdin 或 `PKU_SMS_CODE` 环境变量读取验证码
+    ///    - 调用 `course/mobile_message_get_token` 完成验证
+    ///
+    /// 授权成功后当前 session 内的后续请求即可通过。
+    async fn course_token_exchange(&self) -> Result<()> {
+        // 优先 OTP（无交互）
+        if let Some(otp_code) = pkuinfo_common::otp::get_current_otp(&self.config_dir)? {
+            return self.course_token_exchange_with_otp(&otp_code).await;
+        }
+
+        // Fallback: 短信认证（需要交互输入或环境变量）
+        self.course_token_exchange_with_sms().await
+    }
+
+    /// 用手机令牌 OTP 码换取课程授权
+    async fn course_token_exchange_with_otp(&self, otp_code: &str) -> Result<()> {
+        let url = format!("{TREEHOLE_BASE}/chapi/api/course/password_get_token");
+        let body = serde_json::json!({ "code": otp_code });
+        let resp = self
+            .client
+            .post(&url)
+            .header("authorization", format!("Bearer {}", self.token))
+            .header("uuid", &self.uuid)
+            .json(&body)
+            .send()
+            .await
+            .context("course/password_get_token 请求失败")?;
+        let api_resp: ApiResp<serde_json::Value> =
+            Self::parse_response(resp, "/course/password_get_token").await?;
+        if !api_resp.success {
+            return Err(anyhow!(
+                "换取课程授权码失败: {} (code {})",
+                api_resp.message,
+                api_resp.code
+            ));
+        }
+        Ok(())
+    }
+
+    /// 用短信验证码换取课程授权（OTP 未绑定时的 fallback）
+    async fn course_token_exchange_with_sms(&self) -> Result<()> {
+        use colored::Colorize;
+
+        println!(
+            "{} 未绑定手机令牌，改用短信验证",
+            "[course-auth]".cyan()
+        );
+
+        // Step 1: 发送短信
+        let send_url =
+            format!("{TREEHOLE_BASE}/chapi/api/course/send_get_token_message");
+        let send_resp = self
+            .client
+            .post(&send_url)
+            .header("authorization", format!("Bearer {}", self.token))
+            .header("uuid", &self.uuid)
+            .header("content-type", "application/json")
+            .body("{}")
+            .send()
+            .await
+            .context("course/send_get_token_message 请求失败")?;
+        let send_api: ApiResp<serde_json::Value> =
+            Self::parse_response(send_resp, "/course/send_get_token_message").await?;
+        if !send_api.success {
+            return Err(anyhow!(
+                "发送短信失败: {} (code {})",
+                send_api.message,
+                send_api.code
+            ));
+        }
+        println!("{} 短信验证码已发送", "[+]".green());
+
+        // Step 2: 读取验证码
+        let sms_code = pkuinfo_common::credential::resolve_sms_code("请输入短信验证码: ")?;
+
+        // Step 3: 验证
+        let verify_url =
+            format!("{TREEHOLE_BASE}/chapi/api/course/mobile_message_get_token");
+        let body = serde_json::json!({ "code": sms_code.trim() });
+        let verify_resp = self
+            .client
+            .post(&verify_url)
+            .header("authorization", format!("Bearer {}", self.token))
+            .header("uuid", &self.uuid)
+            .json(&body)
+            .send()
+            .await
+            .context("course/mobile_message_get_token 请求失败")?;
+        let verify_api: ApiResp<serde_json::Value> =
+            Self::parse_response(verify_resp, "/course/mobile_message_get_token").await?;
+        if !verify_api.success {
+            return Err(anyhow!(
+                "短信验证失败: {} (code {})\n\
+                 提示: 可以运行 `treehole otp bind --send` 绑定手机令牌以避免每次都需要短信验证",
+                verify_api.message,
+                verify_api.code
+            ));
+        }
+        Ok(())
     }
 
     // ─── 通用请求 ───────────────────────────────────────────
@@ -401,17 +511,30 @@ impl TreeholeApi {
     }
 
     /// GET 请求到 /chapi/api/ (非 v3) 路径
+    ///
+    /// 如果服务端返回 `code: 40077 "获取授权码"`（课程接口特有的二次授权），
+    /// 会自动调用 `course_token_exchange` 用手机令牌换取授权码后重试一次。
     async fn get_legacy<T: DeserializeOwned + Default>(&self, path: &str) -> Result<T> {
         let url = format!("{TREEHOLE_BASE}/chapi/api{path}");
-        let resp = self
-            .client
-            .get(&url)
-            .header("authorization", format!("Bearer {}", self.token))
-            .header("uuid", &self.uuid)
-            .send()
-            .await
-            .with_context(|| format!("GET {path} 失败"))?;
-        let api_resp: ApiResp<T> = Self::parse_response(resp, path).await?;
+        let send_once = || async {
+            let resp = self
+                .client
+                .get(&url)
+                .header("authorization", format!("Bearer {}", self.token))
+                .header("uuid", &self.uuid)
+                .send()
+                .await
+                .with_context(|| format!("GET {path} 失败"))?;
+            Self::parse_response::<T>(resp, path).await
+        };
+
+        let api_resp = send_once().await?;
+        if api_resp.code == 40077 {
+            // 课程接口要求二次认证：用 OTP 换取授权码后重试
+            self.course_token_exchange().await?;
+            let api_resp = send_once().await?;
+            return Self::check_resp(api_resp, path);
+        }
         Self::check_resp(api_resp, path)
     }
 
