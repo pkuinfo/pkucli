@@ -38,8 +38,8 @@ const ZHIYUN_API_BASE: &str = "https://onlineroomse.pku.edu.cn/courseapi/v2";
 #[derive(Debug, Deserialize)]
 struct ZhiyunResponse<T> {
     code: i32,
-    #[allow(dead_code)]
-    msg: String,
+    #[serde(default)]
+    _msg: String,
     #[serde(default)]
     list: Vec<T>,
 }
@@ -91,8 +91,7 @@ fn build_client(jwt: &str) -> Result<reqwest::Client> {
     let mut headers = HeaderMap::new();
     headers.insert(
         "authorization",
-        HeaderValue::from_str(&format!("Bearer {jwt}"))
-            .context("JWT token 格式错误")?,
+        HeaderValue::from_str(&format!("Bearer {jwt}")).context("JWT token 格式错误")?,
     );
     headers.insert(
         "accept",
@@ -131,18 +130,11 @@ fn extract_period(sub_title: &str) -> String {
 /// 从 kcwybm 提取班号
 /// 格式: "25262-00048-04830220-0006168313-00-1" → 最后一位 "1"
 fn extract_class_no_from_kcwybm(kcwybm: &str) -> String {
-    kcwybm
-        .rsplit('-')
-        .next()
-        .unwrap_or("")
-        .to_string()
+    kcwybm.rsplit('-').next().unwrap_or("").to_string()
 }
 
 /// 查询某一天的全部课程
-async fn fetch_day(
-    client: &reqwest::Client,
-    date: &str,
-) -> Result<Vec<ZhiyunCourse>> {
+async fn fetch_day(client: &reqwest::Client, date: &str) -> Result<Vec<ZhiyunCourse>> {
     let url = format!(
         "{ZHIYUN_API_BASE}/course-live/search-live-course-list?\
         need_time_quantum=1&unique_course=1&with_sub_duration=1\
@@ -237,10 +229,7 @@ pub async fn fetch_all(
     let mut results = Vec::with_capacity(all_courses.len());
 
     if fetch_details {
-        eprintln!(
-            "{} 正在查询课程详情（获取课程代码）...",
-            "[*]".cyan()
-        );
+        eprintln!("{} 正在查询课程详情（获取课程代码）...", "[*]".cyan());
         let total = all_courses.len();
         for (i, (id, c)) in all_courses.into_iter().enumerate() {
             if (i + 1) % 50 == 0 || i + 1 == total {

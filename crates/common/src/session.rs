@@ -57,8 +57,7 @@ pub struct Store {
 impl Store {
     /// 创建存储实例。配置路径统一为 `~/.config/info/<sub_name>/`
     pub fn new(sub_name: &str) -> Result<Self> {
-        let dirs =
-            ProjectDirs::from("", "", "info").context("无法定位用户配置目录")?;
+        let dirs = ProjectDirs::from("", "", "info").context("无法定位用户配置目录")?;
         let root = dirs.config_dir().join(sub_name);
         fs::create_dir_all(&root)
             .with_context(|| format!("创建配置目录失败: {}", root.display()))?;
@@ -82,8 +81,8 @@ impl Store {
         if !path.exists() {
             return Ok(None);
         }
-        let bytes = fs::read(&path)
-            .with_context(|| format!("读取 session 失败: {}", path.display()))?;
+        let bytes =
+            fs::read(&path).with_context(|| format!("读取 session 失败: {}", path.display()))?;
         let sess: Session = serde_json::from_slice(&bytes)
             .with_context(|| format!("解析 session 失败: {}", path.display()))?;
         Ok(Some(sess))
@@ -92,8 +91,7 @@ impl Store {
     pub fn save_session(&self, session: &Session) -> Result<()> {
         let path = self.session_path();
         let data = serde_json::to_vec_pretty(session)?;
-        fs::write(&path, data)
-            .with_context(|| format!("写入 session 失败: {}", path.display()))?;
+        fs::write(&path, data).with_context(|| format!("写入 session 失败: {}", path.display()))?;
         Ok(())
     }
 
@@ -126,8 +124,7 @@ impl Store {
     pub fn clear(&self) -> Result<()> {
         for p in [self.session_path(), self.cookies_path()] {
             if p.exists() {
-                fs::remove_file(&p)
-                    .with_context(|| format!("删除 {} 失败", p.display()))?;
+                fs::remove_file(&p).with_context(|| format!("删除 {} 失败", p.display()))?;
             }
         }
         Ok(())

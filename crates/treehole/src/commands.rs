@@ -53,10 +53,7 @@ pub async fn cmd_search(keyword: &str, page: u32, limit: u32) -> Result<()> {
         return Ok(());
     }
 
-    println!(
-        "{}",
-        format!("── 搜索 \"{}\" ──", keyword).bold()
-    );
+    println!("{}", format!("── 搜索 \"{}\" ──", keyword).bold());
     println!();
     for h in &holes {
         display::print_hole_simple(h);
@@ -266,8 +263,7 @@ pub async fn cmd_msg(page: u32, limit: u32) -> Result<()> {
     if int_count > 0 || sys_count > 0 {
         println!(
             "{}",
-            format!("未读：互动 {int_count} 条，系统 {sys_count} 条")
-                .yellow()
+            format!("未读：互动 {int_count} 条，系统 {sys_count} 条").yellow()
         );
         println!();
     }
@@ -366,18 +362,12 @@ pub async fn cmd_academic_cal(start: Option<&str>, end: Option<&str>) -> Result<
         return Ok(());
     }
 
-    println!(
-        "{}",
-        format!("── 学术日历 ({start} ~ {end}) ──").bold()
-    );
+    println!("{}", format!("── 学术日历 ({start} ~ {end}) ──").bold());
     println!();
     for e in &events {
         display::print_lab_event(e);
     }
-    println!(
-        "{}",
-        format!("共 {} 场学术活动", events.len()).dimmed()
-    );
+    println!("{}", format!("共 {} 场学术活动", events.len()).dimmed());
     Ok(())
 }
 
@@ -404,10 +394,7 @@ pub async fn cmd_activity_cal(
         return Ok(());
     }
 
-    println!(
-        "{}",
-        format!("── 活动日历 ({start} ~ {end}) ──").bold()
-    );
+    println!("{}", format!("── 活动日历 ({start} ~ {end}) ──").bold());
     println!();
     for e in &events {
         display::print_activity_event(e);
@@ -430,8 +417,7 @@ pub async fn cmd_schedule(start: Option<&str>) -> Result<()> {
         .map(|s| s.to_string())
         .unwrap_or_else(|| monday.format("%Y-%m-%d").to_string());
     let end_str = if let Some(s) = start {
-        let d = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
-            .unwrap_or(monday.date_naive());
+        let d = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap_or(monday.date_naive());
         (d + chrono::Duration::days(7))
             .format("%Y-%m-%d")
             .to_string()
@@ -445,10 +431,7 @@ pub async fn cmd_schedule(start: Option<&str>) -> Result<()> {
         return Ok(());
     }
 
-    println!(
-        "{}",
-        format!("── 日程 ({start_str} ~ {end_str}) ──").bold()
-    );
+    println!("{}", format!("── 日程 ({start_str} ~ {end_str}) ──").bold());
     println!();
     for s in &items {
         display::print_schedule_item(s);

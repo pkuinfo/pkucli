@@ -50,14 +50,10 @@ pub async fn run() -> Result<()> {
 
     // ---- Step 2: startlogin ----
     println!("{} 启动扫码登录会话...", "[2/7]".green());
-    let session_id = format!(
-        "177{}{}",
-        chrono::Utc::now().timestamp_millis(),
-        {
-            let mut rng = rand::thread_rng();
-            rng.gen_range(10..99)
-        }
-    );
+    let session_id = format!("177{}{}", chrono::Utc::now().timestamp_millis(), {
+        let mut rng = rand::thread_rng();
+        rng.gen_range(10..99)
+    });
     let form = [
         ("userlang", "zh_CN"),
         ("redirect_url", ""),
@@ -98,7 +94,8 @@ pub async fn run() -> Result<()> {
 
     // 微信实际返回的是 JPEG（ContentType 也是 image/jpeg），以 .jpg 保存
     let qr_path = store.config_dir().join("login-qrcode.jpg");
-    fs::write(&qr_path, &qr_bytes).with_context(|| format!("保存二维码失败: {}", qr_path.display()))?;
+    fs::write(&qr_path, &qr_bytes)
+        .with_context(|| format!("保存二维码失败: {}", qr_path.display()))?;
 
     // ---- Step 4: 展示二维码 ----
     println!("{} 请使用微信扫描下方二维码登录：", "[4/7]".green());
@@ -109,7 +106,11 @@ pub async fn run() -> Result<()> {
             qr_path.display()
         );
     } else {
-        println!("    {} {}", "（二维码已同时保存到）".dimmed(), qr_path.display());
+        println!(
+            "    {} {}",
+            "（二维码已同时保存到）".dimmed(),
+            qr_path.display()
+        );
     }
     println!();
 
@@ -282,8 +283,8 @@ fn render_qr_in_terminal(path: &Path) -> Result<()> {
 
     // 3. 用 qrcode 重画，Dense1x2 = 每个终端字符承载上下两个 QR 模块（▀/▄/█/空）
     use qrcode::render::unicode::Dense1x2;
-    let code = qrcode::QrCode::new(content.as_bytes())
-        .map_err(|e| anyhow!("重建二维码失败: {e}"))?;
+    let code =
+        qrcode::QrCode::new(content.as_bytes()).map_err(|e| anyhow!("重建二维码失败: {e}"))?;
     let modules = code.width() as u32;
     let (sx, sy) = pick_module_scale(modules);
     // 只有在终端明显有富余时才画 quiet zone；紧凑终端直接省掉，换取 ~20% 空间

@@ -50,9 +50,7 @@ pub async fn cmd_reward(
     validate_month(month_from, "起始月份")?;
     validate_month(month_to, "结束月份")?;
     if month_from > month_to {
-        return Err(anyhow!(
-            "起始月份 {month_from} 不能大于结束月份 {month_to}"
-        ));
+        return Err(anyhow!("起始月份 {month_from} 不能大于结束月份 {month_to}"));
     }
 
     // 保存更新后的 cookies（loadRolesMenu 可能刷新过）

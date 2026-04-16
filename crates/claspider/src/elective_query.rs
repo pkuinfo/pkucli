@@ -54,9 +54,9 @@ fn build_client() -> Result<reqwest::Client> {
 /// 解析课程查询结果 HTML 页面中的课程列表
 fn parse_course_table(html: &str) -> Result<(Vec<CourseInfo>, usize)> {
     let dom = Html::parse_document(html);
-    let table_sel = Selector::parse("table.datagrid").unwrap();
-    let tr_sel = Selector::parse("tr").unwrap();
-    let td_sel = Selector::parse("td").unwrap();
+    let table_sel = Selector::parse("table.datagrid").expect("static selector");
+    let tr_sel = Selector::parse("tr").expect("static selector");
+    let td_sel = Selector::parse("td").expect("static selector");
 
     let table = dom
         .select(&table_sel)
@@ -126,8 +126,9 @@ fn parse_time_and_room(raw: &str) -> (String, String, String) {
     let raw = raw.as_ref();
 
     let time_re = Regex::new(
-        r"(\d{1,2})~(\d{1,2})周\s*((?:每周|单周|双周)?)周([一二三四五六日])(\d{1,2})~(\d{1,2})节"
-    ).expect("静态正则");
+        r"(\d{1,2})~(\d{1,2})周\s*((?:每周|单周|双周)?)周([一二三四五六日])(\d{1,2})~(\d{1,2})节",
+    )
+    .expect("静态正则");
 
     // 找出所有时间段的 byte 位置
     struct TimeSlot {
@@ -250,9 +251,7 @@ async fn follow_and_read(client: &reqwest::Client, mut resp: reqwest::Response) 
             .to_string();
 
         if location.contains("iaaa") || location.contains("login") {
-            return Err(anyhow!(
-                "会话已失效，请重新运行 `elective login`"
-            ));
+            return Err(anyhow!("会话已失效，请重新运行 `elective login`"));
         }
 
         let _ = resp.bytes().await?;
@@ -297,10 +296,7 @@ pub async fn fetch_all(
     let resp = client
         .post(COURSE_QUERY_FORM)
         .header("referer", HELP_CONTROLLER)
-        .header(
-            "content-type",
-            "application/x-www-form-urlencoded",
-        )
+        .header("content-type", "application/x-www-form-urlencoded")
         .body(form_body)
         .send()
         .await
@@ -310,10 +306,7 @@ pub async fn fetch_all(
     let (mut courses, total_pages) = parse_course_table(&html)?;
 
     if total_pages > 1 {
-        eprintln!(
-            "{} 选课系统共 {total_pages} 页，正在抓取...",
-            "[*]".cyan()
-        );
+        eprintln!("{} 选课系统共 {total_pages} 页，正在抓取...", "[*]".cyan());
     }
 
     // 翻页获取剩余数据

@@ -9,7 +9,10 @@ pub const TREEHOLE_BASE: &str = "https://treehole.pku.edu.cn";
 /// 构建携带 cookie jar 的 reqwest 客户端
 pub fn build(cookie_store: Arc<CookieStoreMutex>) -> anyhow::Result<reqwest::Client> {
     let mut headers = HeaderMap::new();
-    headers.insert("accept", HeaderValue::from_static("application/json, text/plain, */*"));
+    headers.insert(
+        "accept",
+        HeaderValue::from_static("application/json, text/plain, */*"),
+    );
     headers.insert(
         "user-agent",
         HeaderValue::from_static(

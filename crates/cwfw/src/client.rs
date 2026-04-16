@@ -16,11 +16,12 @@ pub fn build(cookie_store: Arc<CookieStoreMutex>) -> anyhow::Result<reqwest::Cli
     headers.insert("user-agent", HeaderValue::from_static(UA));
     headers.insert(
         "accept",
-        HeaderValue::from_static(
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        ),
+        HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
     );
-    headers.insert("accept-language", HeaderValue::from_static("zh,zh-CN;q=0.9"));
+    headers.insert(
+        "accept-language",
+        HeaderValue::from_static("zh,zh-CN;q=0.9"),
+    );
 
     let client = reqwest::Client::builder()
         .cookie_provider(cookie_store)

@@ -143,7 +143,8 @@ pub async fn search_biz(ctx: &Ctx, query: &str, count: u32) -> Result<Vec<BizIte
 pub async fn run(query: String, count: u32, format: String) -> Result<()> {
     let ctx = warmup().await?;
     let items = search_biz(&ctx, &query, count).await?;
-    ctx.store.save_cookie_store(&crate::session::Store::new()?.load_cookie_store()?)?;
+    ctx.store
+        .save_cookie_store(&crate::session::Store::new()?.load_cookie_store()?)?;
 
     if items.is_empty() {
         println!("{} 未找到匹配的公众号", "[info]".yellow());

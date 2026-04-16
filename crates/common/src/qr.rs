@@ -18,8 +18,7 @@ pub fn render_qr_image(path: &Path, mode: QrDisplayMode) -> Result<()> {
     match mode {
         QrDisplayMode::Open => open_with_system_viewer(path),
         QrDisplayMode::Terminal => {
-            let img = image::open(path)
-                .map_err(|e| anyhow!("打开二维码图片失败: {e}"))?;
+            let img = image::open(path).map_err(|e| anyhow!("打开二维码图片失败: {e}"))?;
 
             let (cols, _) = terminal_size::terminal_size()
                 .map(|(w, h)| (w.0 as u32, h.0 as u32))
@@ -33,8 +32,7 @@ pub fn render_qr_image(path: &Path, mode: QrDisplayMode) -> Result<()> {
                 ..Default::default()
             };
 
-            viuer::print(&img, &conf)
-                .map_err(|e| anyhow!("终端渲染二维码失败: {e}"))?;
+            viuer::print(&img, &conf).map_err(|e| anyhow!("终端渲染二维码失败: {e}"))?;
 
             println!(
                 "    \x1b[2m（如扫码失败，可用 --open 参数调用系统查看器打开原图: {}）\x1b[0m",
@@ -68,8 +66,8 @@ fn open_with_system_viewer(path: &Path) -> Result<()> {
 pub fn render_qr_string(content: &str) -> Result<()> {
     use qrcode::render::unicode::Dense1x2;
 
-    let code = qrcode::QrCode::new(content.as_bytes())
-        .map_err(|e| anyhow!("生成二维码失败: {e}"))?;
+    let code =
+        qrcode::QrCode::new(content.as_bytes()).map_err(|e| anyhow!("生成二维码失败: {e}"))?;
     let modules = code.width() as u32;
     let (sx, sy) = pick_module_scale(modules);
     let quiet = should_draw_quiet_zone(modules, sx);

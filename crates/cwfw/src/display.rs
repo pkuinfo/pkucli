@@ -3,22 +3,6 @@
 use crate::api::{DoQueryResp, DoQueryRow};
 use colored::Colorize;
 
-/// 个人酬金查询返回的列顺序
-const REWARD_COLUMNS: &[&str] = &[
-    "摘要",
-    "项目代码",
-    "发放类型",
-    "发放金额",
-    "扣税金额",
-    "实发金额",
-    "录入时间",
-    "发放时间",
-    "经办人",
-    "录入人",
-    "发放部门",
-    "发放班组",
-];
-
 /// 渲染个人酬金查询结果
 pub fn render_reward_query(resp: &DoQueryResp, year: u32, month_from: u32, month_to: u32) {
     println!();
@@ -75,17 +59,8 @@ pub fn render_reward_query(resp: &DoQueryResp, year: u32, month_from: u32, month
             cell(total, 4).bold().yellow(),
             cell(total, 5).bold().green()
         );
-        println!(
-            "共 {} 条记录",
-            format!("{}", data_rows.len()).bold()
-        );
+        println!("共 {} 条记录", format!("{}", data_rows.len()).bold());
     }
-}
-
-/// 列出字段名（调试用）
-#[allow(dead_code)]
-pub fn column_name(index: usize) -> &'static str {
-    REWARD_COLUMNS.get(index).copied().unwrap_or("?")
 }
 
 fn cell(row: &DoQueryRow, index: usize) -> String {

@@ -292,16 +292,18 @@ fn extract_layer_msg(html: &str) -> Option<String> {
 fn parse_applications(html: &str) -> Vec<Application> {
     use scraper::{Html, Selector};
     let doc = Html::parse_document(html);
-    let row_sel = Selector::parse("div#results > div.row").unwrap();
-    let h5_sel = Selector::parse("h5").unwrap();
+    let row_sel = Selector::parse("div#results > div.row").expect("static selector");
+    let h5_sel = Selector::parse("h5").expect("static selector");
 
-    let cancel_re = regex::Regex::new(r"/classRoom/cancelApply/(\d+)").unwrap();
-    let begin_end_re =
-        regex::Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}\s*-\s*\d{2}:\d{2})").unwrap();
-    let apply_time_re = regex::Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").unwrap();
-    let applicant_re = regex::Regex::new(r"([^\s]+)\s+申请$").unwrap();
-    let reason_re = regex::Regex::new(r"(?s)fa-comment-dots[^<]*</em>\s*([^<]+)").unwrap();
-    let status_re = regex::Regex::new(r#"(?s)color-red"><strong>([^<]+)"#).unwrap();
+    let cancel_re = regex::Regex::new(r"/classRoom/cancelApply/(\d+)").expect("static regex");
+    let begin_end_re = regex::Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}\s*-\s*\d{2}:\d{2})")
+        .expect("static regex");
+    let apply_time_re =
+        regex::Regex::new(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})").expect("static regex");
+    let applicant_re = regex::Regex::new(r"([^\s]+)\s+申请$").expect("static regex");
+    let reason_re =
+        regex::Regex::new(r"(?s)fa-comment-dots[^<]*</em>\s*([^<]+)").expect("static regex");
+    let status_re = regex::Regex::new(r#"(?s)color-red"><strong>([^<]+)"#).expect("static regex");
 
     let mut out = Vec::new();
     for node in doc.select(&row_sel) {

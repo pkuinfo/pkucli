@@ -28,11 +28,7 @@ struct ApiResponse {
 }
 
 /// 检查是否需要短信验证，如需要则引导用户完成验证
-pub async fn check_and_verify(
-    client: &reqwest::Client,
-    jwt_token: &str,
-    uuid: &str,
-) -> Result<()> {
+pub async fn check_and_verify(client: &reqwest::Client, jwt_token: &str, uuid: &str) -> Result<()> {
     // 用帖子接口探测认证状态（该接口对短信验证敏感，un_read 则不敏感）
     let resp: ApiResponse = client
         .get(format!(
@@ -48,10 +44,7 @@ pub async fn check_and_verify(
         .context("解析验证响应失败")?;
 
     if resp.code == CODE_SMS_REQUIRED {
-        println!(
-            "{} 需要短信验证（首次登录或定期验证）",
-            "[!]".yellow()
-        );
+        println!("{} 需要短信验证（首次登录或定期验证）", "[!]".yellow());
         handle_sms_verification(client, jwt_token, uuid).await
     } else if !resp.success {
         Err(anyhow!(
@@ -89,7 +82,8 @@ async fn handle_sms_verification(
 
     if send_resp.success {
         println!("{} 验证码已发送到绑定手机", "✓".green());
-    } else if send_resp.message.contains("还未过期") || send_resp.message.contains("未过期") {
+    } else if send_resp.message.contains("还未过期") || send_resp.message.contains("未过期")
+    {
         println!(
             "{} 已有未过期的验证码（{}），请直接输入",
             "[i]".cyan(),

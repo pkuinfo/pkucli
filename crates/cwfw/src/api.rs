@@ -73,8 +73,7 @@ impl CwfwApi {
         let def = self.load_definition(WIN_REWARD_QUERY, "W").await?;
 
         // procs:["`$<hash>:#5743-d.year#;..."]
-        let re = Regex::new(r#"procs:\["(`\$[a-f0-9]{32}):"#)
-            .expect("静态正则");
+        let re = Regex::new(r#"procs:\["(`\$[a-f0-9]{32}):"#).expect("静态正则");
         let caps = re
             .captures(&def)
             .ok_or_else(|| anyhow!("未在 5802 窗口定义中找到查询按钮的 proc 哈希"))?;
@@ -207,11 +206,7 @@ impl CwfwApi {
     /// - 总是往 body 里塞一个 `a=<userid>` 字段
     /// - 所有 key/value 都走 `picList.encode(picList.encode2(x))`
     /// - 不支持 URL query string（前端会把 query 移到 body 里，我们直接不传）
-    async fn post_encrypted(
-        &self,
-        action: &str,
-        extra_pairs: &[(&str, &str)],
-    ) -> Result<String> {
+    async fn post_encrypted(&self, action: &str, extra_pairs: &[(&str, &str)]) -> Result<String> {
         let url = format!("{CWFW_BASE}/WF_CWBS/{action}");
 
         // 组装 (key, value) 列表：`a` 放最前（对齐前端行为），然后是调用方传入的字段
@@ -296,8 +291,8 @@ impl DoQueryResp {
     /// 将服务端返回的 JS 对象字面量解析成强类型结构。
     pub fn parse(raw: &str) -> Result<Self> {
         let json = normalize_js_object(raw);
-        let mut resp: DoQueryResp = serde_json::from_str(&json)
-            .with_context(|| format!("解析 doQuery 响应失败: {raw}"))?;
+        let mut resp: DoQueryResp =
+            serde_json::from_str(&json).with_context(|| format!("解析 doQuery 响应失败: {raw}"))?;
         // 解码 HTML 数字实体
         for row in &mut resp.rows {
             for cell in &mut row.cell {

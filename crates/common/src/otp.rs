@@ -45,8 +45,7 @@ pub fn generate_totp(secret_base32: &str) -> Result<String> {
 fn generate_hotp(secret: &[u8], counter: u64) -> Result<String> {
     let counter_bytes = counter.to_be_bytes();
 
-    let mut mac =
-        HmacSha1::new_from_slice(secret).context("HMAC-SHA1 密钥初始化失败")?;
+    let mut mac = HmacSha1::new_from_slice(secret).context("HMAC-SHA1 密钥初始化失败")?;
     mac.update(&counter_bytes);
     let result = mac.finalize().into_bytes();
 
@@ -84,8 +83,8 @@ pub fn load_otp_config(config_dir: &Path) -> Result<Option<OtpConfig>> {
     if !path.exists() {
         return Ok(None);
     }
-    let bytes = std::fs::read(&path)
-        .with_context(|| format!("读取 OTP 配置失败: {}", path.display()))?;
+    let bytes =
+        std::fs::read(&path).with_context(|| format!("读取 OTP 配置失败: {}", path.display()))?;
     let config: OtpConfig = serde_json::from_slice(&bytes)
         .with_context(|| format!("解析 OTP 配置失败: {}", path.display()))?;
     Ok(Some(config))
@@ -196,8 +195,7 @@ fn save_pending(
         username: username.to_string(),
     };
     let state_json = serde_json::to_vec_pretty(&state)?;
-    std::fs::write(pending_state_path(config_dir), state_json)
-        .context("保存 OTP 绑定状态失败")?;
+    std::fs::write(pending_state_path(config_dir), state_json).context("保存 OTP 绑定状态失败")?;
 
     let cookies_path = pending_cookies_path(config_dir);
     let file = std::fs::File::create(&cookies_path)
@@ -258,10 +256,7 @@ pub async fn bind_otp_send_sms(config_dir: &Path, username: Option<&str>) -> Res
     save_pending(config_dir, &cred.username, &cookie_store)?;
 
     println!();
-    println!(
-        "{} 短信已发送，会话已保存。收到验证码后运行:",
-        "[i]".cyan()
-    );
+    println!("{} 短信已发送，会话已保存。收到验证码后运行:", "[i]".cyan());
     println!("  {} --verify <CODE>", "otp bind".bold());
     Ok(())
 }
@@ -291,10 +286,7 @@ pub async fn bind_otp_verify(config_dir: &Path, sms_code: &str) -> Result<OtpCon
 /// 4. 获取 TOTP secret → genOtpKey
 /// 5. 生成 OTP 码验证 → userBind
 /// 6. 保存 secret 到本地
-pub async fn bind_otp_interactive(
-    config_dir: &Path,
-    username: Option<&str>,
-) -> Result<OtpConfig> {
+pub async fn bind_otp_interactive(config_dir: &Path, username: Option<&str>) -> Result<OtpConfig> {
     let cookie_store = Arc::new(CookieStoreMutex::new(CookieStore::default()));
     let client = build_bind_client(cookie_store)?;
 
@@ -306,11 +298,7 @@ pub async fn bind_otp_interactive(
 }
 
 /// 内部：执行身份验证并发送短信验证码（Steps 1-2）
-async fn auth_and_send_sms(
-    client: &reqwest::Client,
-    username: &str,
-    password: &str,
-) -> Result<()> {
+async fn auth_and_send_sms(client: &reqwest::Client, username: &str, password: &str) -> Result<()> {
     // Step 1: auth4Bind 验证身份
     println!("{} 验证身份...", "[1/5]".green());
     let auth_url = format!("{IAAA_BASE}/auth4Bind.do");
@@ -352,9 +340,7 @@ async fn auth_and_send_sms(
         .context("短信响应解析失败")?;
 
     if !sms_resp.success {
-        let msg = sms_resp
-            .err_msg
-            .unwrap_or_else(|| "未知错误".to_string());
+        let msg = sms_resp.err_msg.unwrap_or_else(|| "未知错误".to_string());
         return Err(anyhow!("发送短信失败: {msg}"));
     }
 
@@ -406,9 +392,7 @@ async fn verify_sms_and_finalize(
         .context("OTP 密钥响应解析失败")?;
 
     if !gen_resp.success {
-        let msg = gen_resp
-            .err_msg
-            .unwrap_or_else(|| "会话过期".to_string());
+        let msg = gen_resp.err_msg.unwrap_or_else(|| "会话过期".to_string());
         return Err(anyhow!("获取 OTP 密钥失败: {msg}"));
     }
 
@@ -418,9 +402,7 @@ async fn verify_sms_and_finalize(
     let person_name = gen_resp
         .person_name
         .ok_or_else(|| anyhow!("响应缺少 personName"))?;
-    let sec_key = gen_resp
-        .sec_key
-        .ok_or_else(|| anyhow!("响应缺少 secKey"))?;
+    let sec_key = gen_resp.sec_key.ok_or_else(|| anyhow!("响应缺少 secKey"))?;
 
     // Step 6: 生成 OTP 码并完成绑定
     println!("{} 完成绑定...", "[5/5]".green());
@@ -441,9 +423,7 @@ async fn verify_sms_and_finalize(
         .context("绑定响应解析失败")?;
 
     if !bind_resp.success {
-        let msg = bind_resp
-            .err_msg
-            .unwrap_or_else(|| "绑定失败".to_string());
+        let msg = bind_resp.err_msg.unwrap_or_else(|| "绑定失败".to_string());
         return Err(anyhow!("OTP 绑定失败: {msg}"));
     }
 
@@ -477,11 +457,7 @@ async fn verify_sms_and_finalize(
 }
 
 /// 手动设置 OTP secret（用户已有 secret 的情况）
-pub fn set_otp_secret(
-    config_dir: &Path,
-    secret: &str,
-    user_id: &str,
-) -> Result<OtpConfig> {
+pub fn set_otp_secret(config_dir: &Path, secret: &str, user_id: &str) -> Result<OtpConfig> {
     // 验证 secret 是否有效
     generate_totp(secret).context("无效的 TOTP secret")?;
 

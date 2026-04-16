@@ -46,23 +46,13 @@ pub fn xhr_headers(referer: &str) -> HeaderMap {
         "x-requested-with",
         HeaderValue::from_static("XMLHttpRequest"),
     );
-    h.insert(header::REFERER, HeaderValue::from_str(referer).unwrap());
-    h.insert(
-        header::ACCEPT,
-        HeaderValue::from_static("*/*"),
-    );
-    h.insert(
-        "sec-fetch-dest",
-        HeaderValue::from_static("empty"),
-    );
-    h.insert(
-        "sec-fetch-mode",
-        HeaderValue::from_static("cors"),
-    );
-    h.insert(
-        "sec-fetch-site",
-        HeaderValue::from_static("same-origin"),
-    );
+    if let Ok(val) = HeaderValue::from_str(referer) {
+        h.insert(header::REFERER, val);
+    }
+    h.insert(header::ACCEPT, HeaderValue::from_static("*/*"));
+    h.insert("sec-fetch-dest", HeaderValue::from_static("empty"));
+    h.insert("sec-fetch-mode", HeaderValue::from_static("cors"));
+    h.insert("sec-fetch-site", HeaderValue::from_static("same-origin"));
     h
 }
 

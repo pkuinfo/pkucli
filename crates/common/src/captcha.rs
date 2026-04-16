@@ -20,18 +20,13 @@ pub enum CaptchaConfig {
     Manual,
     /// TTShiTu API
     #[serde(rename = "ttshitu")]
-    TTShiTu {
-        username: String,
-        password: String,
-    },
+    TTShiTu { username: String, password: String },
     /// UTOOL Pro API（免费，无需凭证）
     #[serde(rename = "utool")]
     Utool,
     /// 云码 API（需要 token）
     #[serde(rename = "yunma")]
-    Yunma {
-        token: String,
-    },
+    Yunma { token: String },
 }
 
 impl std::fmt::Display for CaptchaConfig {
@@ -60,9 +55,7 @@ pub async fn recognize(
             recognize_ttshitu(client, username, password, image_bytes).await
         }
         CaptchaConfig::Utool => recognize_utool(client, image_bytes).await,
-        CaptchaConfig::Yunma { token } => {
-            recognize_yunma(client, token, image_bytes).await
-        }
+        CaptchaConfig::Yunma { token } => recognize_yunma(client, token, image_bytes).await,
     }
 }
 
@@ -71,8 +64,7 @@ pub async fn recognize(
 fn recognize_manual(image_bytes: &[u8], config_dir: &std::path::Path) -> Result<String> {
     // 将验证码保存为临时文件
     let captcha_path = config_dir.join("captcha.jpg");
-    std::fs::write(&captcha_path, image_bytes)
-        .context("保存验证码图片失败")?;
+    std::fs::write(&captcha_path, image_bytes).context("保存验证码图片失败")?;
 
     // 在终端渲染验证码
     println!();
@@ -101,7 +93,7 @@ fn recognize_manual(image_bytes: &[u8], config_dir: &std::path::Path) -> Result<
 
 // ─── TTShiTu ───────────────────────────────────────────────────
 
-const TTSHITU_API: &str = "http://api.ttshitu.com/base64";
+const TTSHITU_API: &str = "https://api.ttshitu.com/base64";
 
 #[derive(Deserialize)]
 struct TTShiTuResp {
@@ -160,10 +152,7 @@ struct UtoolResp {
     msg: Option<String>,
 }
 
-async fn recognize_utool(
-    client: &reqwest::Client,
-    image_bytes: &[u8],
-) -> Result<String> {
+async fn recognize_utool(client: &reqwest::Client, image_bytes: &[u8]) -> Result<String> {
     use base64::Engine;
 
     let b64 = base64::engine::general_purpose::STANDARD.encode(image_bytes);
@@ -189,13 +178,12 @@ async fn recognize_utool(
         ));
     }
 
-    resp.data
-        .ok_or_else(|| anyhow!("UTOOL 返回数据为空"))
+    resp.data.ok_or_else(|| anyhow!("UTOOL 返回数据为空"))
 }
 
 // ─── 云码 (jfbym.com) ──────────────────────────────────────────
 
-const YUNMA_API: &str = "http://api.jfbym.com/api/YmServer/customApi";
+const YUNMA_API: &str = "https://api.jfbym.com/api/YmServer/customApi";
 
 #[derive(Deserialize)]
 struct YunmaResp {

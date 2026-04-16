@@ -25,8 +25,7 @@ const SUPPLEMENT: &str =
     "https://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/supplement.jsp";
 const SUPPLY_CANCEL: &str =
     "https://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/SupplyCancel.do";
-const DRAW_SERVLET: &str =
-    "https://elective.pku.edu.cn/elective2008/DrawServlet";
+const DRAW_SERVLET: &str = "https://elective.pku.edu.cn/elective2008/DrawServlet";
 const VALIDATE: &str =
     "https://elective.pku.edu.cn/elective2008/edu/pku/stu/elective/controller/supplement/validate.do";
 
@@ -234,7 +233,10 @@ impl ElectiveApi {
             .client
             .post(VALIDATE)
             .header("referer", SUPPLY_CANCEL)
-            .header("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
+            .header(
+                "content-type",
+                "application/x-www-form-urlencoded; charset=UTF-8",
+            )
             .body(body)
             .send()
             .await
@@ -243,12 +245,9 @@ impl ElectiveApi {
         let text = self.follow_and_read(resp).await?;
 
         // 响应格式: { "valid": "2" } — 2=成功, 1=未填写, 0=错误
-        let json: serde_json::Value =
-            serde_json::from_str(&text).context("验证码响应解析失败")?;
+        let json: serde_json::Value = serde_json::from_str(&text).context("验证码响应解析失败")?;
 
-        let valid = json["valid"]
-            .as_str()
-            .unwrap_or("0");
+        let valid = json["valid"].as_str().unwrap_or("0");
 
         match valid {
             "2" => Ok(ValidationResult::Success),
@@ -274,7 +273,7 @@ impl ElectiveApi {
         let dom = Html::parse_document(&body);
 
         // 结果消息在 td#msgTips 中
-        let sel = Selector::parse("td#msgTips").unwrap();
+        let sel = Selector::parse("td#msgTips").expect("static selector");
         let msg = dom
             .select(&sel)
             .next()
@@ -338,14 +337,30 @@ impl ElectiveApi {
 
 /// 选课结果表格列
 const RESULT_COLUMNS: [&str; 10] = [
-    "课程号", "课程名", "课程类别", "学分", "周学时",
-    "教师", "班号", "开课单位", "教室信息", "选课结果",
+    "课程号",
+    "课程名",
+    "课程类别",
+    "学分",
+    "周学时",
+    "教师",
+    "班号",
+    "开课单位",
+    "教室信息",
+    "选课结果",
 ];
 
 /// 已选课程表格列
 const ELECTED_COLUMNS: [&str; 10] = [
-    "课程号", "课程名", "课程类别", "学分", "周学时",
-    "教师", "班号", "开课单位", "年级", "限数/已选",
+    "课程号",
+    "课程名",
+    "课程类别",
+    "学分",
+    "周学时",
+    "教师",
+    "班号",
+    "开课单位",
+    "年级",
+    "限数/已选",
 ];
 
 /// 解析 table.datagrid 中的课程数据
@@ -354,9 +369,9 @@ fn parse_datagrid_table(
     table_index: usize,
     _expected_cols: &[&str],
 ) -> Result<Vec<CourseData>> {
-    let table_sel = Selector::parse("table.datagrid").unwrap();
-    let tr_sel = Selector::parse("tr").unwrap();
-    let td_sel = Selector::parse("td").unwrap();
+    let table_sel = Selector::parse("table.datagrid").expect("static selector");
+    let tr_sel = Selector::parse("tr").expect("static selector");
+    let td_sel = Selector::parse("td").expect("static selector");
 
     let table = dom
         .select(&table_sel)
@@ -400,10 +415,10 @@ fn parse_datagrid_table(
 
 /// 解析补退选课程表格（第一个 table.datagrid，含选课链接）
 fn parse_supplement_table(dom: &Html, page: usize) -> Result<Vec<SupplementCourse>> {
-    let table_sel = Selector::parse("table.datagrid").unwrap();
-    let tr_sel = Selector::parse("tr").unwrap();
-    let td_sel = Selector::parse("td").unwrap();
-    let a_sel = Selector::parse("a").unwrap();
+    let table_sel = Selector::parse("table.datagrid").expect("static selector");
+    let tr_sel = Selector::parse("tr").expect("static selector");
+    let td_sel = Selector::parse("td").expect("static selector");
+    let a_sel = Selector::parse("a").expect("static selector");
 
     let table = dom
         .select(&table_sel)
@@ -462,8 +477,8 @@ fn parse_supplement_table(dom: &Html, page: usize) -> Result<Vec<SupplementCours
 
 /// 从分页控件解析总页数
 fn parse_total_pages(dom: &Html) -> usize {
-    let sel = Selector::parse("tr[align='right'] > td").unwrap();
-    let re = regex::Regex::new(r"Page\s*\d+?\s*of\s*(\d+?)").unwrap();
+    let sel = Selector::parse("tr[align='right'] > td").expect("static selector");
+    let re = regex::Regex::new(r"Page\s*\d+?\s*of\s*(\d+?)").expect("static regex");
     for td in dom.select(&sel) {
         let text = td.text().collect::<String>();
         if let Some(caps) = re.captures(&text) {

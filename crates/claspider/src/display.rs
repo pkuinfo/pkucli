@@ -30,10 +30,7 @@ pub fn print_courses(courses: &[CourseInfo]) {
             format!(" #{}", c.class_no)
         };
 
-        println!(
-            "{idx} {name}{teacher}{class_no}  ({})",
-            c.category.dimmed()
-        );
+        println!("{idx} {name}{teacher}{class_no}  ({})", c.category.dimmed());
 
         // 第二行：详细信息
         let mut details = Vec::new();

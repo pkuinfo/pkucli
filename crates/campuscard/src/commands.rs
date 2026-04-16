@@ -64,10 +64,7 @@ pub async fn cmd_pay(output: Option<&str>) -> Result<()> {
         // 检查用卡冲突（是否允许切换）
         let conflict = api.get_conflict_info(account).await?;
         if conflict.status.as_deref() == Some("0") {
-            let msg = conflict
-                .message
-                .as_deref()
-                .unwrap_or("用卡方式冲突");
+            let msg = conflict.message.as_deref().unwrap_or("用卡方式冲突");
             let msg = regex::Regex::new(r"<[^>]+>|<!DOCTYPE[^>]*>")
                 .unwrap()
                 .replace_all(msg, "")
@@ -89,7 +86,8 @@ pub async fn cmd_pay(output: Option<&str>) -> Result<()> {
         // 切换到数字卡
         print!("  切换用卡方式...");
         io::stdout().flush()?;
-        api.set_use_card_config(crate::api::CARD_TYPE_DIGITAL).await?;
+        api.set_use_card_config(crate::api::CARD_TYPE_DIGITAL)
+            .await?;
         println!(" {}", "OK".green());
     }
 
@@ -105,9 +103,7 @@ pub async fn cmd_pay(output: Option<&str>) -> Result<()> {
     let paytype = pay_info.paytype.as_deref().unwrap_or("1");
 
     // 获取实际的付款条码
-    let barcode_data = api
-        .get_barcode(account, payacc, paytype)
-        .await?;
+    let barcode_data = api.get_barcode(account, payacc, paytype).await?;
 
     let barcode = barcode_data
         .barcode
@@ -123,11 +119,7 @@ pub async fn cmd_pay(output: Option<&str>) -> Result<()> {
     if let Some(path) = output {
         // 导出为 PNG 图片
         save_qr_paycode_png(barcode, path)?;
-        println!(
-            "  {} 付款码已保存到 {}",
-            "✓".green(),
-            path.cyan(),
-        );
+        println!("  {} 付款码已保存到 {}", "✓".green(), path.cyan(),);
     } else {
         // 渲染付款码 QR（与网页端一致：L 级纠错，无边距）
         render_qr_paycode(barcode)?;
@@ -164,10 +156,7 @@ pub async fn cmd_recharge(amount: Option<f64>) -> Result<()> {
     let balance = card.elec_accamt as f64 / 100.0;
 
     println!();
-    println!(
-        "  当前余额: {} 元",
-        format!("{balance:.2}").yellow().bold()
-    );
+    println!("  当前余额: {} 元", format!("{balance:.2}").yellow().bold());
 
     // 输入金额
     let amount = match amount {
@@ -178,10 +167,7 @@ pub async fn cmd_recharge(amount: Option<f64>) -> Result<()> {
             io::stdout().flush()?;
             let mut input = String::new();
             io::stdin().read_line(&mut input)?;
-            input
-                .trim()
-                .parse::<f64>()
-                .context("请输入有效金额")?
+            input.trim().parse::<f64>().context("请输入有效金额")?
         }
     };
 
@@ -211,11 +197,11 @@ pub async fn cmd_recharge(amount: Option<f64>) -> Result<()> {
     render_qr_compact(&cashier_url)?;
 
     println!();
-    println!("  {}", "用手机浏览器扫描上方二维码，选择支付方式完成支付".dimmed());
     println!(
         "  {}",
-        "充值后需在 POS 机上刷一次卡才能到账".yellow()
+        "用手机浏览器扫描上方二维码，选择支付方式完成支付".dimmed()
     );
+    println!("  {}", "充值后需在 POS 机上刷一次卡才能到账".yellow());
     println!();
 
     Ok(())
@@ -258,7 +244,9 @@ pub async fn cmd_stats(month: Option<&str>) -> Result<()> {
     let api = CardApi::new(&jwt)?;
 
     let now = Local::now().date_naive();
-    let month_str = month.unwrap_or(&now.format("%Y-%m").to_string()).to_string();
+    let month_str = month
+        .unwrap_or(&now.format("%Y-%m").to_string())
+        .to_string();
 
     let first_day = NaiveDate::parse_from_str(&format!("{month_str}-01"), "%Y-%m-%d")
         .context("月份格式错误，请使用 YYYY-MM")?;
@@ -322,8 +310,8 @@ fn render_qr_paycode(content: &str) -> Result<()> {
 fn render_qr_compact(content: &str) -> Result<()> {
     use qrcode::render::unicode::Dense1x2;
 
-    let code = qrcode::QrCode::new(content.as_bytes())
-        .map_err(|e| anyhow!("生成二维码失败: {e}"))?;
+    let code =
+        qrcode::QrCode::new(content.as_bytes()).map_err(|e| anyhow!("生成二维码失败: {e}"))?;
     let rendered = code
         .render::<Dense1x2>()
         .dark_color(Dense1x2::Light)

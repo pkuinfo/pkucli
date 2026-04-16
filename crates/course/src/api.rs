@@ -42,9 +42,7 @@ impl CourseInfo {
     pub fn name(&self) -> &str {
         let t = self.title();
         // 找最后一个 '(' 作为学期信息起点
-        t.rfind('(')
-            .map(|i| t[..i].trim())
-            .unwrap_or(t)
+        t.rfind('(').map(|i| t[..i].trim()).unwrap_or(t)
     }
 }
 
@@ -191,10 +189,9 @@ pub fn compute_hash_id(parts: &[&str]) -> String {
 /// 解析 Blackboard 中文格式的截止时间
 /// 格式: "2025年3月15日 星期六 下午11:59"
 pub fn parse_deadline(raw: &str) -> Option<chrono::DateTime<chrono::Local>> {
-    let re = regex::Regex::new(
-        r"(\d{4})年(\d{1,2})月(\d{1,2})日 星期. (上午|下午)(\d{1,2}):(\d{1,2})",
-    )
-    .ok()?;
+    let re =
+        regex::Regex::new(r"(\d{4})年(\d{1,2})月(\d{1,2})日 星期. (上午|下午)(\d{1,2}):(\d{1,2})")
+            .ok()?;
 
     let caps = re.captures(raw)?;
     let year: i32 = caps[1].parse().ok()?;
@@ -255,13 +252,14 @@ pub fn fmt_time_delta(delta: chrono::TimeDelta) -> String {
 
 /// 从 HTML DOM 中解析内容项列表
 fn parse_content_items(dom: &Html) -> Result<Vec<ContentItem>> {
-    let item_sel = Selector::parse("#content_listContainer > li, li.clearfix").unwrap();
-    let title_sel = Selector::parse("h3").unwrap();
-    let link_sel = Selector::parse("h3 a").unwrap();
-    let details_sel = Selector::parse("div.details").unwrap();
-    let desc_sel = Selector::parse("div.vtbegenerated").unwrap();
-    let attach_sel = Selector::parse("ul.attachments li a").unwrap();
-    let img_sel = Selector::parse("img").unwrap();
+    let item_sel =
+        Selector::parse("#content_listContainer > li, li.clearfix").expect("static selector");
+    let title_sel = Selector::parse("h3").expect("static selector");
+    let link_sel = Selector::parse("h3 a").expect("static selector");
+    let details_sel = Selector::parse("div.details").expect("static selector");
+    let desc_sel = Selector::parse("div.vtbegenerated").expect("static selector");
+    let attach_sel = Selector::parse("ul.attachments li a").expect("static selector");
+    let img_sel = Selector::parse("img").expect("static selector");
 
     let mut items = Vec::new();
 
@@ -400,9 +398,8 @@ impl CourseApi {
 
     /// 获取教学网主页 HTML
     async fn get_homepage(&self) -> Result<Html> {
-        let url = format!(
-            "{COURSE_BASE}/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_1_1"
-        );
+        let url =
+            format!("{COURSE_BASE}/webapps/portal/execute/tabs/tabAction?tab_tab_group_id=_1_1");
         let resp = self
             .client
             .get(&url)
@@ -425,7 +422,9 @@ impl CourseApi {
             || final_url.host_str().is_some_and(|h| h.contains("iaaa"))
             || body.contains("IAAA") && body.contains("login")
         {
-            return Err(anyhow!("会话已失效（被重定向到登录页），请重新运行 `course login`"));
+            return Err(anyhow!(
+                "会话已失效（被重定向到登录页），请重新运行 `course login`"
+            ));
         }
 
         Ok(Html::parse_document(&body))
@@ -435,11 +434,11 @@ impl CourseApi {
     pub async fn list_courses(&self, only_current: bool) -> Result<Vec<CourseInfo>> {
         let dom = self.get_homepage().await?;
 
-        let re = regex::Regex::new(r"key=([\d_]+),").unwrap();
-        let portlet_sel = Selector::parse("div.portlet").unwrap();
-        let title_sel = Selector::parse("span.moduleTitle").unwrap();
-        let ul_sel = Selector::parse("ul.courseListing").unwrap();
-        let li_a_sel = Selector::parse("li a").unwrap();
+        let re = regex::Regex::new(r"key=([\d_]+),").expect("static regex");
+        let portlet_sel = Selector::parse("div.portlet").expect("static selector");
+        let title_sel = Selector::parse("span.moduleTitle").expect("static selector");
+        let ul_sel = Selector::parse("ul.courseListing").expect("static selector");
+        let li_a_sel = Selector::parse("li a").expect("static selector");
 
         let mut courses = Vec::new();
 
@@ -450,8 +449,7 @@ impl CourseApi {
                 .map(|el| el.text().collect::<String>())
                 .unwrap_or_default();
 
-            let is_current =
-                title_text.contains("当前") || title_text.contains("Current Semester");
+            let is_current = title_text.contains("当前") || title_text.contains("Current Semester");
 
             for ul in portlet.select(&ul_sel) {
                 for a in ul.select(&li_a_sel) {
@@ -496,7 +494,7 @@ impl CourseApi {
     /// 获取课程侧边栏导航入口
     pub async fn list_course_entries(&self, course_id: &str) -> Result<Vec<CourseEntry>> {
         let dom = self.get_course_page(course_id).await?;
-        let sel = Selector::parse("#courseMenuPalette_contents > li > a").unwrap();
+        let sel = Selector::parse("#courseMenuPalette_contents > li > a").expect("static selector");
 
         let entries: Vec<CourseEntry> = dom
             .select(&sel)
@@ -537,10 +535,7 @@ impl CourseApi {
     ///
     /// 从侧边栏入口出发，递归进入所有 Folder 类型页面，
     /// 收集所有 Assignment / Document / Folder 内容。
-    pub async fn list_all_content_recursive(
-        &self,
-        course_id: &str,
-    ) -> Result<Vec<ContentItem>> {
+    pub async fn list_all_content_recursive(&self, course_id: &str) -> Result<Vec<ContentItem>> {
         // 获取侧边栏入口
         let entries = self.list_course_entries(course_id).await?;
 
@@ -561,9 +556,7 @@ impl CourseApi {
         // BFS 逐层探索
         while !queue.is_empty() {
             // 批量取出（最多 8 个并发）
-            let batch: Vec<String> = queue
-                .drain(..queue.len().min(8))
-                .collect();
+            let batch: Vec<String> = queue.drain(..queue.len().min(8)).collect();
 
             let futures: Vec<_> = batch
                 .iter()
@@ -675,9 +668,12 @@ impl CourseApi {
         let dom = Html::parse_document(&body);
 
         let title = dom
-            .select(&Selector::parse("span.title").unwrap())
+            .select(&Selector::parse("span.title").expect("static selector"))
             .next()
-            .or_else(|| dom.select(&Selector::parse("#pageTitleText").unwrap()).next())
+            .or_else(|| {
+                dom.select(&Selector::parse("#pageTitleText").expect("static selector"))
+                    .next()
+            })
             .map(|el| el.text().collect::<String>())
             .unwrap_or_default()
             .trim()
@@ -685,19 +681,19 @@ impl CourseApi {
 
         // 截止时间
         let deadline = dom
-            .select(&Selector::parse(".itemdates").unwrap())
+            .select(&Selector::parse(".itemdates").expect("static selector"))
             .next()
             .map(|el| el.text().collect::<String>().trim().to_string());
 
         // 说明
         let instructions = dom
-            .select(&Selector::parse("div.vtbegenerated").unwrap())
+            .select(&Selector::parse("div.vtbegenerated").expect("static selector"))
             .next()
             .map(|el| el.text().collect::<String>().trim().to_string())
             .unwrap_or_default();
 
         // 附件
-        let attach_sel = Selector::parse("ul.attachments li a").unwrap();
+        let attach_sel = Selector::parse("ul.attachments li a").expect("static selector");
         let attachments: Vec<Attachment> = dom
             .select(&attach_sel)
             .filter_map(|a| {
@@ -708,13 +704,16 @@ impl CourseApi {
                 } else {
                     format!("{COURSE_BASE}{href}")
                 };
-                Some(Attachment { name, url: full_url })
+                Some(Attachment {
+                    name,
+                    url: full_url,
+                })
             })
             .collect();
 
         // 提交状态
         let status = dom
-            .select(&Selector::parse(".status").unwrap())
+            .select(&Selector::parse(".status").expect("static selector"))
             .next()
             .map(|el| el.text().collect::<String>().trim().to_string())
             .unwrap_or_else(|| "未知".to_string());
@@ -730,12 +729,7 @@ impl CourseApi {
 
     /// 下载文件
     pub async fn download_file(&self, url: &str) -> Result<(String, Vec<u8>)> {
-        let resp = self
-            .client
-            .get(url)
-            .send()
-            .await
-            .context("下载文件失败")?;
+        let resp = self.client.get(url).send().await.context("下载文件失败")?;
 
         if !resp.status().is_success() {
             return Err(anyhow!("下载失败: HTTP {}", resp.status()));
@@ -747,9 +741,9 @@ impl CourseApi {
             .get("content-disposition")
             .and_then(|v| v.to_str().ok())
             .and_then(|v| {
-                v.split("filename=").nth(1).map(|s| {
-                    s.trim_matches('"').to_string()
-                })
+                v.split("filename=")
+                    .nth(1)
+                    .map(|s| s.trim_matches('"').to_string())
             })
             .unwrap_or_else(|| {
                 url.rsplit('/')
@@ -804,7 +798,7 @@ impl CourseApi {
         let body = resp.text().await?;
         let dom = Html::parse_document(&body);
 
-        let sel = Selector::parse("h3#currentAttempt_label").unwrap();
+        let sel = Selector::parse("h3#currentAttempt_label").expect("static selector");
         Ok(dom.select(&sel).next().map(|el| {
             el.text()
                 .collect::<String>()
@@ -838,10 +832,10 @@ impl CourseApi {
         };
 
         let fields = dom
-            .select(&Selector::parse("form#uploadAssignmentFormId input").unwrap())
+            .select(&Selector::parse("form#uploadAssignmentFormId input").expect("static selector"))
             .filter_map(extract_field)
             .chain(
-                dom.select(&Selector::parse("div.field input").unwrap())
+                dom.select(&Selector::parse("div.field input").expect("static selector"))
                     .filter_map(extract_field),
             )
             .collect::<HashMap<_, _>>();
@@ -939,9 +933,7 @@ impl CourseApi {
         let boundary = body.boundary().to_owned();
         let body_bytes = body.build().context("构建 multipart 表单失败")?;
 
-        let upload_url = format!(
-            "{COURSE_BASE}/webapps/assignment/uploadAssignment?action=submit"
-        );
+        let upload_url = format!("{COURSE_BASE}/webapps/assignment/uploadAssignment?action=submit");
         let resp = self
             .client
             .post(&upload_url)
@@ -989,11 +981,11 @@ impl CourseApi {
         //     </li>
         //   </ul>
 
-        let list_sel = Selector::parse("#announcementList > li").unwrap();
-        let title_sel = Selector::parse("h3").unwrap();
-        let body_sel = Selector::parse(".vtbegenerated").unwrap();
-        let details_sel = Selector::parse(".details").unwrap();
-        let info_sel = Selector::parse(".announcementInfo").unwrap();
+        let list_sel = Selector::parse("#announcementList > li").expect("static selector");
+        let title_sel = Selector::parse("h3").expect("static selector");
+        let body_sel = Selector::parse(".vtbegenerated").expect("static selector");
+        let details_sel = Selector::parse(".details").expect("static selector");
+        let info_sel = Selector::parse(".announcementInfo").expect("static selector");
 
         let mut announcements = Vec::new();
 
@@ -1070,11 +1062,7 @@ impl CourseApi {
     // ─── 课程回放相关 ─────────────────────────────────────────────
 
     /// 获取课程回放列表
-    pub async fn list_videos(
-        &self,
-        course_id: &str,
-        course_name: &str,
-    ) -> Result<Vec<VideoInfo>> {
+    pub async fn list_videos(&self, course_id: &str, course_name: &str) -> Result<Vec<VideoInfo>> {
         let url = format!(
             "{COURSE_BASE}/webapps/bb-streammedia-hqy-BBLEARN/videoList.action\
              ?sortDir=ASCENDING&numResults=100&editPaging=false\
@@ -1087,12 +1075,14 @@ impl CourseApi {
         let body = resp.text().await?;
         let dom = Html::parse_document(&body);
 
-        let base_url =
-            url::Url::parse(&format!("{COURSE_BASE}/webapps/bb-streammedia-hqy-BBLEARN/"))
-                .unwrap();
+        let base_url = url::Url::parse(&format!(
+            "{COURSE_BASE}/webapps/bb-streammedia-hqy-BBLEARN/"
+        ))
+        .unwrap();
 
-        let row_sel = Selector::parse("tbody#listContainer_databody > tr").unwrap();
-        let span_sel = Selector::parse("span.table-data-cell-value").unwrap();
+        let row_sel =
+            Selector::parse("tbody#listContainer_databody > tr").expect("static selector");
+        let span_sel = Selector::parse("span.table-data-cell-value").expect("static selector");
 
         let mut videos = Vec::new();
         for tr in dom.select(&row_sel) {
@@ -1152,7 +1142,7 @@ impl CourseApi {
         let dom = Html::parse_document(&body);
 
         let iframe = dom
-            .select(&Selector::parse("#content iframe").unwrap())
+            .select(&Selector::parse("#content iframe").expect("static selector"))
             .next()
             .context("视频 iframe 未找到")?;
         let src = iframe.value().attr("src").context("iframe src 未找到")?;
@@ -1223,8 +1213,7 @@ impl CourseApi {
             contents: String,
         }
 
-        let info: SubInfo =
-            serde_json::from_str(&text).context("解析视频元数据 JSON 失败")?;
+        let info: SubInfo = serde_json::from_str(&text).context("解析视频元数据 JSON 失败")?;
         let item = info.list.first().context("视频元数据列表为空")?;
         let content: SubContent =
             serde_json::from_str(&item.sub_content).context("解析 sub_content 失败")?;
@@ -1305,12 +1294,10 @@ impl CourseApi {
 }
 
 /// 解密 AES-128-CBC 加密的视频片段
-pub fn decrypt_segment(
-    key: &[u8; 16],
-    iv: &[u8; 16],
-    data: &[u8],
-) -> Result<Vec<u8>> {
-    use aes::cipher::{BlockDecryptMut, KeyIvInit, block_padding::Pkcs7, generic_array::GenericArray};
+pub fn decrypt_segment(key: &[u8; 16], iv: &[u8; 16], data: &[u8]) -> Result<Vec<u8>> {
+    use aes::cipher::{
+        block_padding::Pkcs7, generic_array::GenericArray, BlockDecryptMut, KeyIvInit,
+    };
 
     let aes_key = GenericArray::from(*key);
     let aes_iv = GenericArray::from(*iv);

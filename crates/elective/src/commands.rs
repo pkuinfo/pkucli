@@ -1,12 +1,12 @@
 //! 所有子命令的实现
 
 use crate::api::{ElectiveApi, ValidationResult};
-use pkuinfo_common::captcha::{self, CaptchaConfig};
 use crate::config::{AutoElectCourse, ElectiveConfig};
 use crate::display;
 use crate::login::APP_NAME;
 use anyhow::{anyhow, Result};
 use colored::Colorize;
+use pkuinfo_common::captcha::{self, CaptchaConfig};
 use pkuinfo_common::session::Store;
 
 // ─── show ─────────────────────────────────────────────────────
@@ -85,9 +85,7 @@ pub async fn cmd_set() -> Result<()> {
 
     println!("请输入要自动选课的课程编号:");
     let idx = read_index()?.saturating_sub(1);
-    let course = all
-        .get(idx)
-        .ok_or_else(|| anyhow!("无效的编号"))?;
+    let course = all.get(idx).ok_or_else(|| anyhow!("无效的编号"))?;
 
     // 检查是否已在配置中
     let exists = cfg.auto_elect.iter().any(|c| {
@@ -185,9 +183,11 @@ pub fn cmd_config_captcha(backend: &str) -> Result<()> {
 
             CaptchaConfig::Yunma { token }
         }
-        _ => return Err(anyhow!(
-            "未知后端: {backend}。可选: manual, utool, ttshitu, yunma"
-        )),
+        _ => {
+            return Err(anyhow!(
+                "未知后端: {backend}。可选: manual, utool, ttshitu, yunma"
+            ))
+        }
     };
 
     cfg.save(store.config_dir())?;
@@ -202,9 +202,7 @@ pub async fn cmd_launch(interval_secs: u64) -> Result<()> {
     let cfg = ElectiveConfig::load(store.config_dir())?;
 
     if cfg.auto_elect.is_empty() {
-        return Err(anyhow!(
-            "未配置自动选课目标。使用 `elective set` 添加课程"
-        ));
+        return Err(anyhow!("未配置自动选课目标。使用 `elective set` 添加课程"));
     }
 
     println!(
@@ -235,21 +233,13 @@ pub async fn cmd_launch(interval_secs: u64) -> Result<()> {
                         e.name == t.name && e.teacher == t.teacher && e.class_id == t.class_id
                     });
                     if already {
-                        println!(
-                            "  {} 已选上: {} - {}",
-                            "✓".green(),
-                            t.name,
-                            t.teacher,
-                        );
+                        println!("  {} 已选上: {} - {}", "✓".green(), t.name, t.teacher,);
                     }
                     !already
                 });
             }
             Err(e) => {
-                println!(
-                    "  {} 查询已选课程失败: {e:#}",
-                    "[warn]".yellow(),
-                );
+                println!("  {} 查询已选课程失败: {e:#}", "[warn]".yellow(),);
             }
         }
 
@@ -288,8 +278,7 @@ pub async fn cmd_launch(interval_secs: u64) -> Result<()> {
                             target.teacher,
                         );
 
-                        match try_elect(&api, &cfg.captcha, &store, course.elect_url.clone())
-                            .await
+                        match try_elect(&api, &cfg.captcha, &store, course.elect_url.clone()).await
                         {
                             Ok(true) => {
                                 println!(
@@ -300,16 +289,10 @@ pub async fn cmd_launch(interval_secs: u64) -> Result<()> {
                                 );
                             }
                             Ok(false) => {
-                                println!(
-                                    "  {} 选课失败（服务器拒绝）",
-                                    "[fail]".red(),
-                                );
+                                println!("  {} 选课失败（服务器拒绝）", "[fail]".red(),);
                             }
                             Err(e) => {
-                                println!(
-                                    "  {} 选课出错: {e:#}",
-                                    "[error]".red(),
-                                );
+                                println!("  {} 选课出错: {e:#}", "[error]".red(),);
                             }
                         }
                     } else {
@@ -358,13 +341,8 @@ async fn try_elect(
         let image = api.get_captcha_image().await?;
 
         // 识别验证码
-        let code = captcha::recognize(
-            api.client(),
-            captcha_cfg,
-            &image,
-            store.config_dir(),
-        )
-        .await?;
+        let code =
+            captcha::recognize(api.client(), captcha_cfg, &image, store.config_dir()).await?;
 
         println!("    验证码识别结果: {code}");
 
@@ -379,11 +357,7 @@ async fn try_elect(
                 return Ok(true);
             }
             ValidationResult::Wrong => {
-                println!(
-                    "    {} 验证码错误 ({}/3)",
-                    "[retry]".yellow(),
-                    attempt + 1,
-                );
+                println!("    {} 验证码错误 ({}/3)", "[retry]".yellow(), attempt + 1,);
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             }
             ValidationResult::Empty => {

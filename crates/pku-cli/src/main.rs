@@ -109,16 +109,12 @@ fn handle_clap_error(result: anyhow::Result<()>) -> anyhow::Result<()> {
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let result = match cli.command {
-        Tools::Treehole { args } => {
-            pku_treehole::run_from(prepend_name("treehole", &args)).await
-        }
+        Tools::Treehole { args } => pku_treehole::run_from(prepend_name("treehole", &args)).await,
         Tools::Course { args } => pku_course::run_from(prepend_name("course", &args)).await,
         Tools::Campuscard { args } => {
             pku_campuscard::run_from(prepend_name("campuscard", &args)).await
         }
-        Tools::Elective { args } => {
-            pku_elective::run_from(prepend_name("elective", &args)).await
-        }
+        Tools::Elective { args } => pku_elective::run_from(prepend_name("elective", &args)).await,
         Tools::Auth { args } => pku_auth::run_from(prepend_name("info-auth", &args)),
         Tools::Spider { args } => {
             pkuinfo_spider::run_from(prepend_name("info-spider", &args)).await

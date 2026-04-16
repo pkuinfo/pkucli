@@ -63,11 +63,7 @@ pub fn print_course_entries(course_name: &str, entries: &[CourseEntry]) {
     println!("{}", format!("── {} ──", course_name).bold());
     println!();
     for (i, entry) in entries.iter().enumerate() {
-        println!(
-            "  {} {}",
-            format!("[{}]", i + 1).cyan(),
-            entry.name.bold(),
-        );
+        println!("  {} {}", format!("[{}]", i + 1).cyan(), entry.name.bold(),);
     }
     println!();
 }
@@ -103,7 +99,12 @@ pub fn print_content_list(items: &[ContentItem]) {
         }
 
         for att in &item.attachments {
-            println!("      {} {} {}", "附件".dimmed(), att.name, att.url.dimmed());
+            println!(
+                "      {} {} {}",
+                "附件".dimmed(),
+                att.name,
+                att.url.dimmed()
+            );
         }
     }
     println!();

@@ -36,11 +36,12 @@ pub async fn fetch_as_markdown(url: &str) -> Result<String> {
     let mut headers = HeaderMap::new();
     headers.insert(
         "accept",
-        HeaderValue::from_static(
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        ),
+        HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
     );
-    headers.insert("accept-language", HeaderValue::from_static("zh-CN,zh;q=0.9"));
+    headers.insert(
+        "accept-language",
+        HeaderValue::from_static("zh-CN,zh;q=0.9"),
+    );
 
     let client = reqwest::Client::builder()
         .user_agent(WX_UA)

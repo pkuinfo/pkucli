@@ -37,10 +37,7 @@ fn iaaa_config() -> IaaaConfig {
 }
 
 /// 用户名密码登录
-pub async fn login_with_password(
-    username: Option<&str>,
-    dual: Option<&DualDegree>,
-) -> Result<()> {
+pub async fn login_with_password(username: Option<&str>, dual: Option<&DualDegree>) -> Result<()> {
     let store = Store::new(APP_NAME)?;
     check_existing_session(&store)?;
 
@@ -200,8 +197,7 @@ async fn follow_redirects(
 
 /// 从双学位选择页面提取 sida 参数
 fn extract_sida(body: &str) -> Result<String> {
-    let re = regex::Regex::new(r"\?sida=(\S{32})&sttp=")
-        .context("sida 正则编译失败")?;
+    let re = regex::Regex::new(r"\?sida=(\S{32})&sttp=").context("sida 正则编译失败")?;
     let caps = re
         .captures(body)
         .ok_or_else(|| anyhow!("无法从页面中提取 sida 参数"))?;
@@ -211,10 +207,7 @@ fn extract_sida(body: &str) -> Result<String> {
 fn check_existing_session(store: &Store) -> Result<()> {
     if let Some(old) = store.load_session()? {
         if !old.is_expired() {
-            println!(
-                "{} 检测到已有登录会话，继续将覆盖。",
-                "[info]".cyan(),
-            );
+            println!("{} 检测到已有登录会话，继续将覆盖。", "[info]".cyan(),);
         }
     }
     Ok(())
@@ -240,10 +233,7 @@ pub fn status() -> Result<()> {
             println!("  配置目录 = {}", store.config_dir().display());
         }
         None => {
-            println!(
-                "{} 未登录。运行 `elective login` 开始。",
-                "○".red()
-            );
+            println!("{} 未登录。运行 `elective login` 开始。", "○".red());
         }
     }
     Ok(())

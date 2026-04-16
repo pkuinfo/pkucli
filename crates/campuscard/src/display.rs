@@ -54,10 +54,7 @@ pub fn print_card_info(card: &CardInfo) {
     println!("  学工号   {sno}");
     println!("  卡号     {account}");
     println!("  到期日   {expdate}");
-    println!(
-        "  总余额   {} 元",
-        format!("{balance:.2}").yellow().bold()
-    );
+    println!("  总余额   {} 元", format!("{balance:.2}").yellow().bold());
 
     if let Some(accounts) = &card.accinfo {
         println!();
@@ -85,10 +82,7 @@ fn print_acc_info(acc: &AccInfo) {
     if let Some(day_cost) = acc.daycostamt {
         let day_limit = acc.daycostlimit.unwrap_or(0) as f64 / 100.0;
         let day_cost_yuan = day_cost as f64 / 100.0;
-        println!(
-            "    今日消费 {:.2} / {:.2} 元",
-            day_cost_yuan, day_limit
-        );
+        println!("    今日消费 {:.2} / {:.2} 元", day_cost_yuan, day_limit);
     }
 }
 
@@ -107,10 +101,7 @@ pub fn print_turnovers(turnovers: &[Turnover], page: i64, total_pages: i64, tota
         total_pages,
         total
     );
-    println!(
-        "  {}",
-        "─".repeat(70).dimmed()
-    );
+    println!("  {}", "─".repeat(70).dimmed());
 
     for t in turnovers {
         let desc = t.resume.as_deref().unwrap_or("未知交易");
@@ -140,17 +131,8 @@ pub fn print_turnovers(turnovers: &[Turnover], page: i64, total_pages: i64, tota
             _ => ttype.normal(),
         };
 
-        println!(
-            "  {} {:<6} {}",
-            time.dimmed(),
-            type_badge,
-            amount,
-        );
-        println!(
-            "  {}  余额: {:.2}",
-            desc.bold(),
-            balance,
-        );
+        println!("  {} {:<6} {}", time.dimmed(), type_badge, amount,);
+        println!("  {}  余额: {:.2}", desc.bold(), balance,);
         println!("  {}", "─".repeat(70).dimmed());
     }
 }
@@ -220,12 +202,7 @@ fn print_daily_chart(daily: &HashMap<String, f64>) {
             0
         };
         let bar: String = "█".repeat(bar_len);
-        println!(
-            "  {} {} {:.2}",
-            day.dimmed(),
-            bar.red(),
-            val,
-        );
+        println!("  {} {} {:.2}", day.dimmed(), bar.red(), val,);
     }
     println!();
 }

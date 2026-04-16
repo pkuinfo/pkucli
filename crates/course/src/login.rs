@@ -100,10 +100,7 @@ async fn complete_bb_login(store: &Store, iaaa_token: &str) -> Result<()> {
         .context("访问教学网主页失败")?;
 
     if !home_resp.status().is_success() {
-        return Err(anyhow!(
-            "教学网登录验证失败: HTTP {}",
-            home_resp.status()
-        ));
+        return Err(anyhow!("教学网登录验证失败: HTTP {}", home_resp.status()));
     }
     let _ = home_resp.bytes().await?;
 
@@ -122,10 +119,7 @@ async fn complete_bb_login(store: &Store, iaaa_token: &str) -> Result<()> {
 fn check_existing_session(store: &Store) -> Result<()> {
     if let Some(old) = store.load_session()? {
         if !old.is_expired() {
-            println!(
-                "{} 检测到已有登录会话，继续将覆盖。",
-                "[info]".cyan(),
-            );
+            println!("{} 检测到已有登录会话，继续将覆盖。", "[info]".cyan(),);
         }
     }
     Ok(())

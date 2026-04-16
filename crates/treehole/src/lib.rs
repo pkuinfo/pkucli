@@ -258,8 +258,7 @@ pub enum OtpAction {
 fn init_tracing() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "warn".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "warn".into()),
         )
         .init();
 }
@@ -282,7 +281,11 @@ where
 pub async fn dispatch(command: Commands) -> Result<()> {
     match command {
         // ── Auth ──
-        Commands::Login { password, username, open } => {
+        Commands::Login {
+            password,
+            username,
+            open,
+        } => {
             if password {
                 login::login_with_password(username.as_deref()).await?;
             } else {
@@ -300,17 +303,27 @@ pub async fn dispatch(command: Commands) -> Result<()> {
         // ── Browse ──
         Commands::List { feed, page, limit } => commands::cmd_list(&feed, page, limit).await?,
         Commands::Show { pid } => commands::cmd_show(pid).await?,
-        Commands::Search { keyword, page, limit } => {
-            commands::cmd_search(&keyword, page, limit).await?
-        }
+        Commands::Search {
+            keyword,
+            page,
+            limit,
+        } => commands::cmd_search(&keyword, page, limit).await?,
 
         // ── Create ──
-        Commands::Post { text, tag, named, fold, reward, image } => {
-            commands::cmd_post(text, tag, named, fold, reward, image).await?
-        }
-        Commands::Reply { pid, text, quote, image } => {
-            commands::cmd_reply(pid, text, quote, image).await?
-        }
+        Commands::Post {
+            text,
+            tag,
+            named,
+            fold,
+            reward,
+            image,
+        } => commands::cmd_post(text, tag, named, fold, reward, image).await?,
+        Commands::Reply {
+            pid,
+            text,
+            quote,
+            image,
+        } => commands::cmd_reply(pid, text, quote, image).await?,
 
         // ── Interact ──
         Commands::Like { pid } => commands::cmd_like(pid).await?,
@@ -337,9 +350,12 @@ pub async fn dispatch(command: Commands) -> Result<()> {
         Commands::AcademicCal { start, end } => {
             commands::cmd_academic_cal(start.as_deref(), end.as_deref()).await?
         }
-        Commands::ActivityCal { start, end, page, limit } => {
-            commands::cmd_activity_cal(start.as_deref(), end.as_deref(), page, limit).await?
-        }
+        Commands::ActivityCal {
+            start,
+            end,
+            page,
+            limit,
+        } => commands::cmd_activity_cal(start.as_deref(), end.as_deref(), page, limit).await?,
         Commands::Schedule { start } => commands::cmd_schedule(start.as_deref()).await?,
 
         // ── OTP ──
@@ -354,7 +370,11 @@ pub async fn dispatch(command: Commands) -> Result<()> {
 async fn handle_otp(action: OtpAction, config_dir: &std::path::Path) -> anyhow::Result<()> {
     use colored::Colorize;
     match action {
-        OtpAction::Bind { username, send, verify } => {
+        OtpAction::Bind {
+            username,
+            send,
+            verify,
+        } => {
             if send {
                 pkuinfo_common::otp::bind_otp_send_sms(config_dir, username.as_deref()).await?;
             } else if let Some(code) = verify {
@@ -370,8 +390,13 @@ async fn handle_otp(action: OtpAction, config_dir: &std::path::Path) -> anyhow::
         OtpAction::Show => match pkuinfo_common::otp::get_current_otp(config_dir)? {
             Some(code) => {
                 let config = pkuinfo_common::otp::load_otp_config(config_dir)?
-                    .expect("OTP 配置存在");
-                println!("{} {} ({})", "OTP:".green().bold(), code.bold(), config.user_id);
+                    .ok_or_else(|| anyhow::anyhow!("OTP 配置文件缺失，请先运行 `otp bind`"))?;
+                println!(
+                    "{} {} ({})",
+                    "OTP:".green().bold(),
+                    code.bold(),
+                    config.user_id
+                );
             }
             None => {
                 println!(

@@ -15,25 +15,25 @@ name = "info-spider"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.5", features = ["derive"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "fs", "signal"] }
-reqwest = { version = "0.12", features = ["cookies", "gzip", "brotli", "json", "stream"] }
-reqwest_cookie_store = "0.8"
-cookie_store = "0.21"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-anyhow = "1"
+clap.workspace = true
+tokio = { workspace = true, features = ["time", "fs", "signal"] }
+reqwest = { workspace = true, features = ["stream"] }
+reqwest_cookie_store.workspace = true
+cookie_store.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
 thiserror = "2"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true
 directories = "5"
-chrono = { version = "0.4", features = ["serde"] }
-url = "2"
-image = "0.25"
+chrono.workspace = true
+url.workspace = true
+image.workspace = true
 rqrr = "0.9"
-qrcode = { version = "0.14", default-features = false }
+qrcode.workspace = true
 terminal_size = "0.4"
-rand = "0.8"
+rand.workspace = true
 urlencoding = "2"
-colored = "2"
+colored.workspace = true
 html2md = "0.2"

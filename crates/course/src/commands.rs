@@ -110,7 +110,11 @@ pub async fn cmd_assignments(all: bool, all_term: bool) -> Result<()> {
     all_assignments.sort_by_key(|a| a.deadline);
 
     if all_assignments.is_empty() {
-        let msg = if all { "暂无作业" } else { "暂无未完成作业" };
+        let msg = if all {
+            "暂无作业"
+        } else {
+            "暂无未完成作业"
+        };
         println!("{}", msg.dimmed());
         return Ok(());
     }
@@ -301,9 +305,7 @@ pub async fn cmd_submit(
             }
             println!("请选择要提交的文件:");
             let idx = read_index()?.saturating_sub(1);
-            let f = files
-                .get(idx)
-                .ok_or_else(|| anyhow!("无效的编号"))?;
+            let f = files.get(idx).ok_or_else(|| anyhow!("无效的编号"))?;
             std::path::PathBuf::from(f)
         }
     };
@@ -312,11 +314,7 @@ pub async fn cmd_submit(
         return Err(anyhow!("文件不存在: {}", file_path.display()));
     }
 
-    println!(
-        "{} 正在提交 {} ...",
-        "[*]".cyan(),
-        file_path.display()
-    );
+    println!("{} 正在提交 {} ...", "[*]".cyan(), file_path.display());
 
     api.submit_assignment(&actual_course, &actual_content, &file_path)
         .await?;
@@ -335,9 +333,7 @@ pub async fn cmd_videos(course_id: Option<&str>, all_term: bool) -> Result<()> {
         Some(cid) => {
             // 指定课程
             let course = resolve_course_info(&api, cid).await?;
-            let videos = api
-                .list_videos(&course.id, course.name())
-                .await?;
+            let videos = api.list_videos(&course.id, course.name()).await?;
             if videos.is_empty() {
                 println!("{}", "该课程暂无回放视频".dimmed());
                 return Ok(());
@@ -396,9 +392,7 @@ pub async fn cmd_video_download(
     // 查找视频：可以是 hash_id 或 index
     let video = if let Some(cid) = course_id {
         let course = resolve_course_info(&api, cid).await?;
-        let videos = api
-            .list_videos(&course.id, course.name())
-            .await?;
+        let videos = api.list_videos(&course.id, course.name()).await?;
         find_video(videos, id)?
     } else {
         // 在所有课程中搜索
@@ -422,11 +416,7 @@ pub async fn cmd_video_download(
 
     let detail = api.get_video_detail(&video).await?;
     let total_segments = detail.playlist.segments.len();
-    println!(
-        "{} 共 {} 个片段，开始下载...",
-        "[*]".cyan(),
-        total_segments,
-    );
+    println!("{} 共 {} 个片段，开始下载...", "[*]".cyan(), total_segments,);
 
     let out_dir = output_dir.unwrap_or(".");
     tokio::fs::create_dir_all(out_dir).await?;
@@ -547,11 +537,7 @@ pub async fn cmd_video_download(
     // 清理临时文件
     let _ = tokio::fs::remove_dir_all(&tmp_dir).await;
 
-    println!(
-        "{} 下载完成: {}",
-        "✓".green(),
-        output_file.display(),
-    );
+    println!("{} 下载完成: {}", "✓".green(), output_file.display(),);
     Ok(())
 }
 
@@ -614,11 +600,7 @@ pub async fn cmd_announcements(course_id: Option<&str>) -> Result<()> {
             }
 
             println!();
-            println!(
-                "{} 共 {} 条公告",
-                "──".bold(),
-                all_announcements.len()
-            );
+            println!("{} 共 {} 条公告", "──".bold(), all_announcements.len());
             for summary in &all_announcements {
                 display::print_announcement_summary(summary);
             }
@@ -696,10 +678,7 @@ async fn resolve_course_id(api: &CourseApi, input: &str) -> Result<String> {
 }
 
 /// 解析课程 ID 并返回完整课程信息
-async fn resolve_course_info(
-    api: &CourseApi,
-    input: &str,
-) -> Result<api::CourseInfo> {
+async fn resolve_course_info(api: &CourseApi, input: &str) -> Result<api::CourseInfo> {
     if input.starts_with('_') && input.ends_with("_1") {
         let courses = api.list_courses(false).await?;
         if let Some(c) = courses.into_iter().find(|c| c.id == input) {
@@ -726,9 +705,7 @@ async fn resolve_course_info(
     courses
         .into_iter()
         .find(|c| c.name().contains(input) || c.long_title.contains(input))
-        .ok_or_else(|| {
-            anyhow!("未找到匹配的课程 \"{input}\"。使用 `course courses` 查看课程列表")
-        })
+        .ok_or_else(|| anyhow!("未找到匹配的课程 \"{input}\"。使用 `course courses` 查看课程列表"))
 }
 
 /// 通过 hash_id 或序号查找视频
@@ -773,6 +750,5 @@ fn read_line() -> Result<String> {
 
 fn read_index() -> Result<usize> {
     let line = read_line()?;
-    line.parse::<usize>()
-        .map_err(|_| anyhow!("请输入有效数字"))
+    line.parse::<usize>().map_err(|_| anyhow!("请输入有效数字"))
 }

@@ -40,10 +40,7 @@ pub fn print_results(courses: &[CourseData]) {
         }
     }
     println!();
-    println!(
-        "{}",
-        format!("共 {} 门课程", courses.len()).dimmed()
-    );
+    println!("{}", format!("共 {} 门课程", courses.len()).dimmed());
 }
 
 /// 打印补退选课程列表

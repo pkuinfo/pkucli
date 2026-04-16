@@ -2,8 +2,8 @@
 //!
 //! 配置存储在 ~/.config/info/elective/config.toml
 
-use pkuinfo_common::captcha::CaptchaConfig;
 use anyhow::{Context, Result};
+use pkuinfo_common::captcha::CaptchaConfig;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -52,14 +52,12 @@ impl ElectiveConfig {
         }
         let content = std::fs::read_to_string(&path)
             .with_context(|| format!("读取配置文件失败: {}", path.display()))?;
-        toml::from_str(&content)
-            .with_context(|| format!("解析配置文件失败: {}", path.display()))
+        toml::from_str(&content).with_context(|| format!("解析配置文件失败: {}", path.display()))
     }
 
     pub fn save(&self, config_dir: &Path) -> Result<()> {
         let path = config_dir.join("config.toml");
-        let content = toml::to_string_pretty(self)
-            .context("序列化配置失败")?;
+        let content = toml::to_string_pretty(self).context("序列化配置失败")?;
         std::fs::write(&path, content)
             .with_context(|| format!("写入配置文件失败: {}", path.display()))?;
         Ok(())

@@ -12,10 +12,7 @@ const MOBILE_UA: &str =
 /// 构建不跟随重定向的客户端（用于门户 SSO → 校园卡 JWT 流程，需要手动处理 302）
 pub fn build_no_redirect() -> anyhow::Result<reqwest::Client> {
     let mut headers = HeaderMap::new();
-    headers.insert(
-        "user-agent",
-        HeaderValue::from_static(MOBILE_UA),
-    );
+    headers.insert("user-agent", HeaderValue::from_static(MOBILE_UA));
     headers.insert(
         "x-requested-with",
         HeaderValue::from_static("cn.edu.pku.PKUAndroid"),
@@ -32,10 +29,7 @@ pub fn build_no_redirect() -> anyhow::Result<reqwest::Client> {
 /// 构建简单客户端（用于 IAAA 认证）
 pub fn build_simple() -> anyhow::Result<reqwest::Client> {
     let mut headers = HeaderMap::new();
-    headers.insert(
-        "user-agent",
-        HeaderValue::from_static(MOBILE_UA),
-    );
+    headers.insert("user-agent", HeaderValue::from_static(MOBILE_UA));
     headers.insert(
         "x-requested-with",
         HeaderValue::from_static("cn.edu.pku.PKUAndroid"),
@@ -51,10 +45,7 @@ pub fn build_simple() -> anyhow::Result<reqwest::Client> {
 /// 构建带 JWT 认证头的 API 客户端（自动跟随重定向）
 pub fn build_api(jwt: &str) -> anyhow::Result<reqwest::Client> {
     let mut headers = HeaderMap::new();
-    headers.insert(
-        "user-agent",
-        HeaderValue::from_static(MOBILE_UA),
-    );
+    headers.insert("user-agent", HeaderValue::from_static(MOBILE_UA));
     headers.insert(
         "x-requested-with",
         HeaderValue::from_static("cn.edu.pku.PKUAndroid"),
@@ -63,10 +54,7 @@ pub fn build_api(jwt: &str) -> anyhow::Result<reqwest::Client> {
         "synjones-auth",
         HeaderValue::from_str(&format!("bearer {jwt}"))?,
     );
-    headers.insert(
-        "synaccesssource",
-        HeaderValue::from_static("h5"),
-    );
+    headers.insert("synaccesssource", HeaderValue::from_static("h5"));
 
     let client = reqwest::Client::builder()
         .default_headers(headers)

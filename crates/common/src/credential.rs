@@ -99,9 +99,7 @@ fn try_keyring() -> Result<Option<Credential>> {
 
     let username = match kr.get_password() {
         Ok(u) => u,
-        Err(keyring::Error::NoEntry) | Err(keyring::Error::PlatformFailure(_)) => {
-            return Ok(None)
-        }
+        Err(keyring::Error::NoEntry) | Err(keyring::Error::PlatformFailure(_)) => return Ok(None),
         Err(e) => {
             tracing::debug!("keyring 读取用户名失败: {e}");
             return Ok(None);
@@ -182,14 +180,14 @@ fn interactive_input(username_hint: Option<&str>) -> Result<Credential> {
 
 /// 将凭据保存到 OS keyring
 pub fn keyring_store(username: &str, password: &str) -> Result<()> {
-    let kr_user = keyring::Entry::new(KEYRING_SERVICE, "username")
-        .context("创建 keyring entry 失败")?;
+    let kr_user =
+        keyring::Entry::new(KEYRING_SERVICE, "username").context("创建 keyring entry 失败")?;
     kr_user
         .set_password(username)
         .context("保存用户名到 keyring 失败")?;
 
-    let kr_pw = keyring::Entry::new(KEYRING_SERVICE, "password")
-        .context("创建 keyring entry 失败")?;
+    let kr_pw =
+        keyring::Entry::new(KEYRING_SERVICE, "password").context("创建 keyring entry 失败")?;
     kr_pw
         .set_password(password)
         .context("保存密码到 keyring 失败")?;
@@ -243,10 +241,7 @@ pub fn resolve_sms_code(prompt: &str) -> Result<String> {
     if let Ok(code) = std::env::var(ENV_SMS_CODE) {
         let code = code.trim().to_string();
         if !code.is_empty() {
-            println!(
-                "{} 使用环境变量中的短信验证码",
-                "[auth]".cyan()
-            );
+            println!("{} 使用环境变量中的短信验证码", "[auth]".cyan());
             return Ok(code);
         }
     }

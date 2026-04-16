@@ -34,12 +34,7 @@ pub struct PageResult {
     pub total_count: i64,
 }
 
-pub async fn fetch_page(
-    ctx: &Ctx,
-    fakeid: &str,
-    begin: u32,
-    count: u32,
-) -> Result<PageResult> {
+pub async fn fetch_page(ctx: &Ctx, fakeid: &str, begin: u32, count: u32) -> Result<PageResult> {
     let url = format!(
         "{BASE}/cgi-bin/appmsgpublish?sub=list&search_field=null&begin={begin}&count={count}&query=&fakeid={}&type=101_1&free_publish_type=1&sub_action=list_ex&fingerprint={}&token={}&lang=zh_CN&f=json&ajax=1",
         urlencoding::encode(fakeid),
@@ -80,8 +75,8 @@ pub async fn fetch_page(
         .get("publish_page")
         .and_then(|v| v.as_str())
         .ok_or_else(|| anyhow!("响应缺少 publish_page 字段"))?;
-    let publish_page: Value = serde_json::from_str(publish_page_str)
-        .context("解析 publish_page 字符串失败")?;
+    let publish_page: Value =
+        serde_json::from_str(publish_page_str).context("解析 publish_page 字符串失败")?;
 
     let total_count = publish_page
         .get("total_count")
@@ -115,15 +110,9 @@ pub async fn fetch_page(
 }
 
 fn parse_article(v: &Value) -> Result<Article> {
-    let get_str = |k: &str| -> String {
-        v.get(k)
-            .and_then(|x| x.as_str())
-            .unwrap_or("")
-            .to_string()
-    };
-    let get_i64 = |k: &str| -> i64 {
-        v.get(k).and_then(|x| x.as_i64()).unwrap_or(0)
-    };
+    let get_str =
+        |k: &str| -> String { v.get(k).and_then(|x| x.as_str()).unwrap_or("").to_string() };
+    let get_i64 = |k: &str| -> i64 { v.get(k).and_then(|x| x.as_i64()).unwrap_or(0) };
     Ok(Article {
         aid: get_str("aid"),
         appmsgid: get_i64("appmsgid"),

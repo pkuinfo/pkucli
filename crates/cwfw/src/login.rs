@@ -222,8 +222,7 @@ pub fn logout() -> Result<()> {
 /// 属性值形如 `WINOPEN../WF_CWBS/main2.jsp?context=...&token=...&pId=WF_CWBS`。
 /// 这里去掉前缀 `WINOPEN`，返回相对 URL。
 fn extract_wf_cwbs_entry(html: &str) -> Option<String> {
-    let re =
-        regex::Regex::new(r#"id="WF_CWBS"\s+url="([^"]+)""#).ok()?;
+    let re = regex::Regex::new(r#"id="WF_CWBS"\s+url="([^"]+)""#).ok()?;
     let caps = re.captures(html)?;
     let raw = caps.get(1)?.as_str();
     // 去掉 HTML 实体转义
@@ -236,9 +235,7 @@ fn extract_wf_cwbs_entry(html: &str) -> Option<String> {
 /// 把相对 URL 拼接成绝对 URL。
 fn resolve_relative(base: &str, relative: &str) -> Result<String> {
     let base_url = reqwest::Url::parse(base).context("解析 base URL 失败")?;
-    let joined = base_url
-        .join(relative)
-        .context("拼接相对 URL 失败")?;
+    let joined = base_url.join(relative).context("拼接相对 URL 失败")?;
     Ok(joined.to_string())
 }
 

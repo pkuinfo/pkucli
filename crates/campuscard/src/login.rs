@@ -18,8 +18,7 @@ use pkuinfo_common::{
 pub const APP_NAME: &str = "campuscard";
 
 const PORTAL_APP_ID: &str = "portal2017";
-const PORTAL_REDIRECT: &str =
-    "https://portal.pku.edu.cn/portal2017/ssoLogin.do";
+const PORTAL_REDIRECT: &str = "https://portal.pku.edu.cn/portal2017/ssoLogin.do";
 
 fn iaaa_config() -> IaaaConfig {
     IaaaConfig {
@@ -75,11 +74,7 @@ pub async fn login_with_qrcode(qr_mode: pkuinfo_common::qr::QrDisplayMode) -> Re
 /// 需要手动控制重定向链来提取中间的 JWT：
 /// ssoLogin.do → 302(设置 SESSION) →
 /// redirectToCard.do → 302 → berserker-auth → 302(带 JWT) → ...
-async fn complete_login(
-    store: &Store,
-    iaaa_token: &str,
-    username: &str,
-) -> Result<()> {
+async fn complete_login(store: &Store, iaaa_token: &str, username: &str) -> Result<()> {
     // 构建一个不跟随重定向的客户端（共享 simple_client 的 cookie jar）
     // simple_client 已有内置 cookie jar，但我们需要手动处理重定向
     // 所以单独构建一个 no-redirect 客户端来执行门户→校园卡的流程
@@ -88,9 +83,7 @@ async fn complete_login(
     // Step 1: 用 IAAA token 登录门户（获取 SESSION cookie）
     println!("{} 登录门户...", "[1/3]".green());
     let rand_val: f64 = rand::random();
-    let sso_url = format!(
-        "{PORTAL_REDIRECT}?_rand={rand_val:.20}&token={iaaa_token}"
-    );
+    let sso_url = format!("{PORTAL_REDIRECT}?_rand={rand_val:.20}&token={iaaa_token}");
 
     let resp = no_redirect
         .get(&sso_url)
@@ -158,8 +151,7 @@ fn get_location(resp: &reqwest::Response, step: &str) -> Result<String> {
 
 /// 从重定向 URL 中提取 synjones-auth JWT
 fn extract_jwt(url: &str) -> Result<String> {
-    let parsed = reqwest::Url::parse(url)
-        .context("解析重定向 URL 失败")?;
+    let parsed = reqwest::Url::parse(url).context("解析重定向 URL 失败")?;
 
     for (k, v) in parsed.query_pairs() {
         if k == "synjones-auth" {
@@ -173,10 +165,7 @@ fn extract_jwt(url: &str) -> Result<String> {
 fn check_existing_session(store: &Store) -> Result<()> {
     if let Some(old) = store.load_session()? {
         if !old.is_expired() {
-            println!(
-                "{} 检测到已有登录会话，继续将覆盖。",
-                "[info]".cyan(),
-            );
+            println!("{} 检测到已有登录会话，继续将覆盖。", "[info]".cyan(),);
         }
     }
     Ok(())
@@ -198,10 +187,7 @@ pub fn status() -> Result<()> {
             println!("  配置目录 = {}", store.config_dir().display());
         }
         None => {
-            println!(
-                "{} 未登录。运行 `campuscard login` 开始。",
-                "○".red()
-            );
+            println!("{} 未登录。运行 `campuscard login` 开始。", "○".red());
         }
     }
     Ok(())

@@ -37,11 +37,6 @@ impl UserContext {
         self.inner.insert(key, value);
     }
 
-    #[allow(dead_code)]
-    pub fn get(&self, key: &str) -> Option<&Value> {
-        self.inner.get(key)
-    }
-
     pub fn to_json_string(&self) -> String {
         Value::Object(self.inner.clone()).to_string()
     }
@@ -121,7 +116,10 @@ pub async fn load_init_function(client: &Client, ctx: &mut UserContext) -> Resul
         return Err(anyhow!("loadInitFunction HTTP {status}"));
     }
 
-    let vars: Vec<Var> = resp.json().await.context("解析 loadInitFunction 响应失败")?;
+    let vars: Vec<Var> = resp
+        .json()
+        .await
+        .context("解析 loadInitFunction 响应失败")?;
     for v in vars {
         ctx.set(format!("0-{}", v.varname.to_uppercase()), v.data);
     }
@@ -130,10 +128,7 @@ pub async fn load_init_function(client: &Client, ctx: &mut UserContext) -> Resul
 
 /// 给 userContext 填入已知的 "个人酬金查询" 静态绑定（菜单节点等）
 pub fn seed_reward_query_context(ctx: &mut UserContext, uid: &str) {
-    ctx.set(
-        "0-USERINFO.USERID".into(),
-        Value::String(uid.to_string()),
-    );
+    ctx.set("0-USERINFO.USERID".into(), Value::String(uid.to_string()));
     ctx.set("0-UNINO".into(), Value::String(uid.to_string()));
     ctx.set("CURRMENUNODEID".into(), Value::Number(220.into()));
     ctx.set(

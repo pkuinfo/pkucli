@@ -81,10 +81,7 @@ pub fn dispatch(command: Commands) -> Result<()> {
 }
 
 fn cmd_store() -> Result<()> {
-    println!(
-        "{}",
-        "将 PKU IAAA 凭据安全存储到系统密钥链".bold()
-    );
+    println!("{}", "将 PKU IAAA 凭据安全存储到系统密钥链".bold());
     println!(
         "{}",
         "密码将由操作系统加密保护，不会以明文保存到磁盘。".dimmed()
@@ -124,10 +121,7 @@ fn cmd_store() -> Result<()> {
     println!();
     println!("{} 凭据已安全存储到系统密钥链", "✓".green().bold());
     println!("  用户名: {}", username);
-    println!(
-        "  密码:   {}",
-        "*".repeat(password.len()).dimmed()
-    );
+    println!("  密码:   {}", "*".repeat(password.len()).dimmed());
     println!();
     println!(
         "{}",
@@ -165,10 +159,7 @@ fn cmd_status() -> Result<()> {
     let has_env_user = std::env::var("PKU_USERNAME").is_ok();
     let has_env_pass = std::env::var("PKU_PASSWORD").is_ok();
     if has_env_user && has_env_pass {
-        println!(
-            "{} 环境变量 PKU_USERNAME/PKU_PASSWORD 已设置",
-            "●".green()
-        );
+        println!("{} 环境变量 PKU_USERNAME/PKU_PASSWORD 已设置", "●".green());
     } else if has_env_user || has_env_pass {
         println!(
             "{} 环境变量设置不完整（需要同时设置 PKU_USERNAME 和 PKU_PASSWORD）",
@@ -204,12 +195,7 @@ fn cmd_check() -> Result<()> {
                 );
             }
             credential::SessionStatus::NotFound => {
-                println!(
-                    "  {} {} — {}",
-                    "○".red(),
-                    label,
-                    "未登录".red()
-                );
+                println!("  {} {} — {}", "○".red(), label, "未登录".red());
             }
         }
     }

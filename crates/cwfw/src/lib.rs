@@ -93,8 +93,7 @@ pub enum OtpAction {
 fn init_tracing() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "warn".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "warn".into()),
         )
         .init();
 }
@@ -168,7 +167,7 @@ async fn handle_otp(action: OtpAction, config_dir: &std::path::Path) -> anyhow::
         OtpAction::Show => match pkuinfo_common::otp::get_current_otp(config_dir)? {
             Some(code) => {
                 let config = pkuinfo_common::otp::load_otp_config(config_dir)?
-                    .expect("OTP 配置存在");
+                    .ok_or_else(|| anyhow::anyhow!("OTP 配置文件缺失，请先运行 `otp bind`"))?;
                 println!(
                     "{} {} ({})",
                     "OTP:".green().bold(),

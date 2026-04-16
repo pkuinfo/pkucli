@@ -15,19 +15,19 @@ name = "claspider"
 path = "src/main.rs"
 
 [dependencies]
-pkuinfo-common = { version = "0.1.2", path = "../common" }
+pkuinfo-common.workspace = true
 pku-elective = { version = "0.1.2", path = "../elective" }
-clap = { version = "4.5", features = ["derive", "env"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
-reqwest = { version = "0.12", features = ["cookies", "gzip", "brotli", "json"] }
-reqwest_cookie_store = "0.8"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-anyhow = "1"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-colored = "2"
-chrono = { version = "0.4", features = ["serde"] }
-scraper = "0.22"
-regex = "1"
-rand = "0.8"
+clap = { workspace = true, features = ["env"] }
+tokio = { workspace = true, features = ["time"] }
+reqwest.workspace = true
+reqwest_cookie_store.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+colored.workspace = true
+chrono.workspace = true
+scraper.workspace = true
+regex.workspace = true
+rand.workspace = true

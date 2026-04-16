@@ -15,11 +15,11 @@ name = "info-auth"
 path = "src/main.rs"
 
 [dependencies]
-pkuinfo-common = { version = "0.1.2", path = "../common" }
-clap = { version = "4.5", features = ["derive"] }
-anyhow = "1"
-colored = "2"
-rpassword = "5"
+pkuinfo-common = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+colored = { workspace = true }
+rpassword = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { version = "3", default-features = false, features = ["sync-secret-service"] }

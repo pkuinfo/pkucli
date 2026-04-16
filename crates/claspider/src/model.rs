@@ -71,10 +71,7 @@ pub async fn merge_sources(
                 c
             }
             Err(e) => {
-                eprintln!(
-                    "  {} 选课系统获取失败: {e}（跳过）",
-                    "[!]".yellow()
-                );
+                eprintln!("  {} 选课系统获取失败: {e}（跳过）", "[!]".yellow());
                 Vec::new()
             }
         };
@@ -91,10 +88,7 @@ pub async fn merge_sources(
                 c
             }
             Err(e) => {
-                eprintln!(
-                    "  {} 智云课堂获取失败: {e}（跳过）",
-                    "[!]".yellow()
-                );
+                eprintln!("  {} 智云课堂获取失败: {e}（跳过）", "[!]".yellow());
                 Vec::new()
             }
         }

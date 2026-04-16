@@ -3,8 +3,8 @@
 use crate::client::{self, TREEHOLE_BASE};
 use anyhow::{anyhow, Context, Result};
 use pkuinfo_common::session::Store;
-use reqwest::Client;
 use reqwest::multipart;
+use reqwest::Client;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 const APP_NAME: &str = "treehole";
@@ -157,24 +157,24 @@ pub struct Bookmark {
 #[derive(Debug, Clone, Deserialize)]
 pub struct CourseScore {
     #[serde(default)]
-    pub kcmc: String,        // 课程名称
+    pub kcmc: String, // 课程名称
     #[serde(default)]
-    pub xf: String,          // 学分
+    pub xf: String, // 学分
     #[serde(default)]
-    pub xqcj: String,        // 成绩
+    pub xqcj: String, // 成绩
     #[serde(default)]
-    pub kclbmc: String,      // 课程类别名称 (全校任选/专业必修/...)
+    pub kclbmc: String, // 课程类别名称 (全校任选/专业必修/...)
     #[serde(default)]
-    pub xnd: String,         // 学年度 e.g. "25-26"
+    pub xnd: String, // 学年度 e.g. "25-26"
     #[serde(default)]
-    pub xq: String,          // 学期 "1" or "2" or "3"
+    pub xq: String, // 学期 "1" or "2" or "3"
 }
 
 /// 学期GPA
 #[derive(Debug, Clone, Deserialize)]
 pub struct SemesterGpa {
     pub gpa: String,
-    pub xndxq: String,       // e.g. "25-26-1"
+    pub xndxq: String, // e.g. "25-26-1"
 }
 
 /// 成绩查询总响应
@@ -192,13 +192,13 @@ pub struct ScoreData {
 #[derive(Debug, Clone)]
 pub struct CourseSlot {
     pub course_name: String,
-    pub style: String,        // background-color
+    pub style: String, // background-color
 }
 
 /// 课表一行（一节课在一周中的分布）
 #[derive(Debug, Clone)]
 pub struct CourseRow {
-    pub time_num: String,     // "第一节" etc
+    pub time_num: String,               // "第一节" etc
     pub slots: [Option<CourseSlot>; 7], // mon..sun
 }
 
@@ -356,14 +356,10 @@ impl TreeholeApi {
     async fn course_token_exchange_with_sms(&self) -> Result<()> {
         use colored::Colorize;
 
-        println!(
-            "{} 未绑定手机令牌，改用短信验证",
-            "[course-auth]".cyan()
-        );
+        println!("{} 未绑定手机令牌，改用短信验证", "[course-auth]".cyan());
 
         // Step 1: 发送短信
-        let send_url =
-            format!("{TREEHOLE_BASE}/chapi/api/course/send_get_token_message");
+        let send_url = format!("{TREEHOLE_BASE}/chapi/api/course/send_get_token_message");
         let send_resp = self
             .client
             .post(&send_url)
@@ -389,8 +385,7 @@ impl TreeholeApi {
         let sms_code = pkuinfo_common::credential::resolve_sms_code("请输入短信验证码: ")?;
 
         // Step 3: 验证
-        let verify_url =
-            format!("{TREEHOLE_BASE}/chapi/api/course/mobile_message_get_token");
+        let verify_url = format!("{TREEHOLE_BASE}/chapi/api/course/mobile_message_get_token");
         let body = serde_json::json!({ "code": sms_code.trim() });
         let verify_resp = self
             .client
@@ -635,9 +630,7 @@ impl TreeholeApi {
 
     /// 获取收藏分组列表
     pub async fn list_bookmark_groups(&self) -> Result<Vec<Bookmark>> {
-        let data: ListData<Bookmark> = self
-            .get("/bookmark/list?page=1&limit=200")
-            .await?;
+        let data: ListData<Bookmark> = self.get("/bookmark/list?page=1&limit=200").await?;
         Ok(data.list)
     }
 
@@ -696,11 +689,14 @@ impl TreeholeApi {
     pub async fn get_scores(&self) -> Result<ScoreData> {
         let data: serde_json::Value = self.get_legacy("/course/score_v2").await?;
 
-        let score = data.get("score").ok_or_else(|| anyhow!("成绩数据缺少 score"))?;
+        let score = data
+            .get("score")
+            .ok_or_else(|| anyhow!("成绩数据缺少 score"))?;
         let gpa_section = data.get("gpa").ok_or_else(|| anyhow!("成绩数据缺少 gpa"))?;
 
         // Parse courses from score.cjxx
-        let courses: Vec<CourseScore> = score.get("cjxx")
+        let courses: Vec<CourseScore> = score
+            .get("cjxx")
             .and_then(|v| v.as_array())
             .map(|arr| {
                 arr.iter()
@@ -710,19 +706,22 @@ impl TreeholeApi {
             .unwrap_or_default();
 
         // Parse overall GPA from score.gpa
-        let overall_gpa = score.get("gpa")
+        let overall_gpa = score
+            .get("gpa")
             .and_then(|g| g.get("gpa"))
             .and_then(|v| v.as_str())
             .unwrap_or("N/A")
             .to_string();
-        let total_credits = score.get("gpa")
+        let total_credits = score
+            .get("gpa")
             .and_then(|g| g.get("xxxf"))
             .and_then(|v| v.as_str())
             .unwrap_or("0")
             .to_string();
 
         // Parse semester GPAs from gpa.data
-        let semester_gpas: Vec<SemesterGpa> = gpa_section.get("data")
+        let semester_gpas: Vec<SemesterGpa> = gpa_section
+            .get("data")
             .and_then(|v| v.as_array())
             .map(|arr| {
                 arr.iter()
@@ -743,38 +742,42 @@ impl TreeholeApi {
 
     pub async fn get_coursetable(&self) -> Result<Vec<CourseRow>> {
         let data: serde_json::Value = self.get_legacy("/getCoursetable_v2").await?;
-        let courses = data.get("course")
+        let courses = data
+            .get("course")
             .and_then(|v| v.as_array())
             .ok_or_else(|| anyhow!("课表数据缺少 course"))?;
 
         let days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-        let rows = courses.iter().map(|row| {
-            let time_num = val_str(row, "timeNum");
-            let mut slots: [Option<CourseSlot>; 7] = Default::default();
-            for (i, day) in days.iter().enumerate() {
-                if let Some(d) = row.get(*day) {
-                    let name = val_str(d, "courseName");
-                    if !name.is_empty() {
-                        // Parse HTML: "CourseName<br>上课信息：...<br>考试信息：..."
-                        let parts: Vec<&str> = name.split("<br>").collect();
-                        let course_name = parts.first().unwrap_or(&"").to_string();
-                        let style = val_str(d, "sty");
-                        slots[i] = Some(CourseSlot {
-                            course_name,
-                            style,
-                        });
+        let rows = courses
+            .iter()
+            .map(|row| {
+                let time_num = val_str(row, "timeNum");
+                let mut slots: [Option<CourseSlot>; 7] = Default::default();
+                for (i, day) in days.iter().enumerate() {
+                    if let Some(d) = row.get(*day) {
+                        let name = val_str(d, "courseName");
+                        if !name.is_empty() {
+                            // Parse HTML: "CourseName<br>上课信息：...<br>考试信息：..."
+                            let parts: Vec<&str> = name.split("<br>").collect();
+                            let course_name = parts.first().unwrap_or(&"").to_string();
+                            let style = val_str(d, "sty");
+                            slots[i] = Some(CourseSlot { course_name, style });
+                        }
                     }
                 }
-            }
-            CourseRow { time_num, slots }
-        }).collect();
+                CourseRow { time_num, slots }
+            })
+            .collect();
 
         Ok(rows)
     }
 
     pub async fn get_class_times(&self) -> Result<Vec<ClassTime>> {
-        let data: serde_json::Value = self.post_json("/classtimes/user_class_times", &serde_json::json!({})).await?;
-        let list: Vec<ClassTime> = data.get("list")
+        let data: serde_json::Value = self
+            .post_json("/classtimes/user_class_times", &serde_json::json!({}))
+            .await?;
+        let list: Vec<ClassTime> = data
+            .get("list")
             .and_then(|v| v.as_array())
             .map(|arr| {
                 arr.iter()
@@ -788,10 +791,11 @@ impl TreeholeApi {
     // ─── 学术日历 ───────────────────────────────────────────
 
     pub async fn list_lab_events(&self, start: &str, end: &str) -> Result<Vec<LabEvent>> {
-        let data: serde_json::Value = self.get(&format!(
-            "/lab_events?startDate={start}&endDate={end}"
-        )).await?;
-        let events: Vec<LabEvent> = data.get("events")
+        let data: serde_json::Value = self
+            .get(&format!("/lab_events?startDate={start}&endDate={end}"))
+            .await?;
+        let events: Vec<LabEvent> = data
+            .get("events")
             .and_then(|v| v.as_array())
             .map(|arr| {
                 arr.iter()
@@ -804,10 +808,18 @@ impl TreeholeApi {
 
     // ─── 活动日历 ───────────────────────────────────────────
 
-    pub async fn list_activity_events(&self, start: &str, end: &str, page: u32, limit: u32) -> Result<Vec<ActivityEvent>> {
-        let data: ListData<ActivityEvent> = self.get(&format!(
-            "/events/list?startTime={start}&endTime={end}&page={page}&limit={limit}"
-        )).await?;
+    pub async fn list_activity_events(
+        &self,
+        start: &str,
+        end: &str,
+        page: u32,
+        limit: u32,
+    ) -> Result<Vec<ActivityEvent>> {
+        let data: ListData<ActivityEvent> = self
+            .get(&format!(
+                "/events/list?startTime={start}&endTime={end}&page={page}&limit={limit}"
+            ))
+            .await?;
         Ok(data.list)
     }
 
@@ -853,11 +865,17 @@ impl TreeholeApi {
         if !api_resp.success {
             return Err(anyhow!("上传图片失败: {}", api_resp.message));
         }
-        let data = api_resp.data.ok_or_else(|| anyhow!("上传成功但返回数据为空"))?;
+        let data = api_resp
+            .data
+            .ok_or_else(|| anyhow!("上传成功但返回数据为空"))?;
         // 尝试从响应中提取 media id
         let id = data
             .get("id")
-            .and_then(|v| v.as_i64().map(|n| n.to_string()).or_else(|| v.as_str().map(String::from)))
+            .and_then(|v| {
+                v.as_i64()
+                    .map(|n| n.to_string())
+                    .or_else(|| v.as_str().map(String::from))
+            })
             .ok_or_else(|| anyhow!("上传响应缺少 id 字段: {data}"))?;
         Ok(id)
     }
@@ -875,16 +893,20 @@ impl TreeholeApi {
     // ─── 周日程 ─────────────────────────────────────────────
 
     pub async fn list_schedules(&self, start: &str, end: &str) -> Result<Vec<ScheduleItem>> {
-        let data: serde_json::Value = self.get(&format!(
-            "/schedules/weeklySchedules?start_time={start}&end_time={end}"
-        )).await?;
+        let data: serde_json::Value = self
+            .get(&format!(
+                "/schedules/weeklySchedules?start_time={start}&end_time={end}"
+            ))
+            .await?;
         // The data might be a direct array or have a list field
         if let Some(arr) = data.as_array() {
-            Ok(arr.iter()
+            Ok(arr
+                .iter()
                 .filter_map(|s| serde_json::from_value(s.clone()).ok())
                 .collect())
         } else if let Some(list) = data.get("list").and_then(|v| v.as_array()) {
-            Ok(list.iter()
+            Ok(list
+                .iter()
                 .filter_map(|s| serde_json::from_value(s.clone()).ok())
                 .collect())
         } else {
@@ -929,7 +951,10 @@ fn val_i64(v: &serde_json::Value, key: &str) -> i64 {
     v.get(key).and_then(|x| x.as_i64()).unwrap_or(0)
 }
 fn val_str(v: &serde_json::Value, key: &str) -> String {
-    v.get(key).and_then(|x| x.as_str()).map(|s| s.to_string()).unwrap_or_default()
+    v.get(key)
+        .and_then(|x| x.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or_default()
 }
 
 fn parse_tags(v: &serde_json::Value) -> Vec<TagInfo> {

@@ -43,8 +43,7 @@ pub struct Store {
 
 impl Store {
     pub fn new() -> Result<Self> {
-        let dirs = ProjectDirs::from("", "", "info-spider")
-            .context("无法定位用户配置目录")?;
+        let dirs = ProjectDirs::from("", "", "info-spider").context("无法定位用户配置目录")?;
         let root = dirs.config_dir().to_path_buf();
         fs::create_dir_all(&root)
             .with_context(|| format!("创建配置目录失败: {}", root.display()))?;
@@ -114,8 +113,7 @@ impl Store {
     pub fn clear(&self) -> Result<()> {
         for p in [self.session_path(), self.cookies_path()] {
             if p.exists() {
-                fs::remove_file(&p)
-                    .with_context(|| format!("删除 {} 失败", p.display()))?;
+                fs::remove_file(&p).with_context(|| format!("删除 {} 失败", p.display()))?;
             }
         }
         Ok(())

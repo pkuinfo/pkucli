@@ -31,7 +31,10 @@ fn check_resp<T>(resp: ApiResp<T>) -> Result<T> {
         ));
     }
     if !resp.success || resp.code != 200 {
-        let msg = resp.message.or(resp.msg).unwrap_or_else(|| "未知错误".into());
+        let msg = resp
+            .message
+            .or(resp.msg)
+            .unwrap_or_else(|| "未知错误".into());
         return Err(anyhow!("API 错误: {msg}"));
     }
     resp.data.ok_or_else(|| anyhow!("API 响应缺少 data 字段"))
@@ -108,7 +111,7 @@ pub struct CardTypeOption {
 }
 
 /// 用卡方式代码
-pub const CARD_TYPE_DIGITAL: i32 = 1;  // 数字卡（付款码用这个）
+pub const CARD_TYPE_DIGITAL: i32 = 1; // 数字卡（付款码用这个）
 
 // ─── 交易记录 ────────────────────────────────────────
 
@@ -180,21 +183,14 @@ impl CardApi {
     /// 查询校园卡信息
     pub async fn query_card(&self) -> Result<CardQueryData> {
         let url = format!("{CARD_BASE}/berserker-app/ykt/tsm/queryCard?synAccessSource=h5");
-        let resp = self
-            .http
-            .get(&url)
-            .send()
-            .await
-            .context("查询校园卡失败")?;
+        let resp = self.http.get(&url).send().await.context("查询校园卡失败")?;
         let api_resp: ApiResp<CardQueryData> = parse_response(resp).await?;
         check_resp(api_resp)
     }
 
     /// 获取付款码信息
     pub async fn get_pay_info(&self) -> Result<Vec<PayInfo>> {
-        let url = format!(
-            "{CARD_BASE}/berserker-app/ykt/tsm/codebarPayinfo?synAccessSource=h5"
-        );
+        let url = format!("{CARD_BASE}/berserker-app/ykt/tsm/codebarPayinfo?synAccessSource=h5");
         let resp = self
             .http
             .get(&url)
@@ -227,9 +223,7 @@ impl CardApi {
 
     /// 查询当前用卡方式
     pub async fn get_use_card_config(&self) -> Result<UseCardConfig> {
-        let url = format!(
-            "{CARD_BASE}/berserker-app/useCard/getUseCardConfig?synAccessSource=h5"
-        );
+        let url = format!("{CARD_BASE}/berserker-app/useCard/getUseCardConfig?synAccessSource=h5");
         let resp = self
             .http
             .get(&url)
@@ -381,10 +375,7 @@ impl CardApi {
         params.insert("appid".into(), "56321".into());
         params.insert("tranamt".into(), amount_yuan.to_string());
         params.insert("source".into(), "app".into());
-        params.insert(
-            "synjones-auth".into(),
-            format!("bearer {jwt}"),
-        );
+        params.insert("synjones-auth".into(), format!("bearer {jwt}"));
         params.insert("yktcard".into(), account.into());
         params.insert("synAccessSource".into(), "h5".into());
         params.insert(
@@ -424,7 +415,6 @@ impl CardApi {
         // Location 就是完整的收银台 URL（含 orderid 和 token）
         Ok(location.to_string())
     }
-
 }
 
 // ─── 请求签名 ────────────────────────────────────────
@@ -495,11 +485,6 @@ fn nonce() -> String {
 /// Hex encoding (inline, avoids adding hex crate)
 mod hex {
     pub fn encode(bytes: impl AsRef<[u8]>) -> String {
-        bytes
-            .as_ref()
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect()
+        bytes.as_ref().iter().map(|b| format!("{b:02x}")).collect()
     }
 }
-

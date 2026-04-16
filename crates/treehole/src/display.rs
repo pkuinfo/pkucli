@@ -2,7 +2,7 @@
 
 use crate::api::{
     ActivityEvent, ClassTime, Comment, CourseRow, Hole, HoleListItem, LabEvent, Message,
-    ScoreData, ScheduleItem, UserInfo,
+    ScheduleItem, ScoreData, UserInfo,
 };
 use crate::colorize;
 use colored::Colorize;
@@ -78,10 +78,7 @@ pub fn print_hole_item(item: &HoleListItem) {
         println!("    {} {}", tag.dimmed(), cpreview.dimmed());
     }
     if item.reply > 3 {
-        println!(
-            "    {}",
-            format!("... 共 {} 条评论", item.reply).dimmed()
-        );
+        println!("    {}", format!("... 共 {} 条评论", item.reply).dimmed());
     }
     println!();
 }
@@ -173,8 +170,7 @@ pub fn print_hole_detail(h: &Hole, comments: &[Comment], total: Option<i64>) {
     let total_count = total.unwrap_or(comments.len() as i64);
     println!(
         "{}",
-        format!("── 评论 ({total_count}) ──────────────────────")
-            .dimmed()
+        format!("── 评论 ({total_count}) ──────────────────────").dimmed()
     );
     println!();
 
@@ -201,11 +197,7 @@ pub fn print_comment(c: &Comment) {
             q.get("name_tag").and_then(|v| v.as_str()),
         ) {
             let qtext = truncate_display(&qt.replace('\n', " "), 50);
-            println!(
-                "  {} {}",
-                format!("Re {qn}:").dimmed(),
-                qtext.dimmed()
-            );
+            println!("  {} {}", format!("Re {qn}:").dimmed(), qtext.dimmed());
         }
     }
 
@@ -433,11 +425,7 @@ pub fn print_coursetable(rows: &[CourseRow]) {
 pub fn print_class_times(times: &[ClassTime]) {
     println!("{}", "── 作息时间 ──".bold());
     for t in times {
-        println!(
-            "  {:>8}  {}",
-            t.name.bold(),
-            t.time_period.dimmed()
-        );
+        println!("  {:>8}  {}", t.name.bold(), t.time_period.dimmed());
     }
 }
 

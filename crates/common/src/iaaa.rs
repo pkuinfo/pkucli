@@ -212,9 +212,7 @@ pub async fn login_qrcode(
             .context("解析轮询响应失败")?;
 
         if resp.success {
-            let token = resp
-                .token
-                .ok_or_else(|| anyhow!("扫码成功但 token 为空"))?;
+            let token = resp.token.ok_or_else(|| anyhow!("扫码成功但 token 为空"))?;
             println!("   {} 扫码登录成功", "✓".green());
             return Ok(IaaaToken { token });
         }
@@ -258,8 +256,7 @@ pub async fn login_qrcode(
 
 /// 使用 RSA 公钥加密密码
 fn encrypt_password(pem: &str, password: &str) -> Result<String> {
-    let public_key = RsaPublicKey::from_public_key_pem(pem)
-        .context("解析 RSA 公钥失败")?;
+    let public_key = RsaPublicKey::from_public_key_pem(pem).context("解析 RSA 公钥失败")?;
     let mut rng = rand::thread_rng();
     let encrypted = public_key
         .encrypt(&mut rng, Pkcs1v15Encrypt, password.as_bytes())

@@ -43,11 +43,7 @@ fn get_device_uuid(store: &Store) -> String {
 
 fn full_device_uuid(short_uuid: &str) -> String {
     let full = uuid::Uuid::new_v4().to_string();
-    format!(
-        "Web_PKUHOLE_2.0.0_WEB_UUID_{}-{}",
-        &full[..23],
-        short_uuid
-    )
+    format!("Web_PKUHOLE_2.0.0_WEB_UUID_{}-{}", &full[..23], short_uuid)
 }
 
 /// 用户名密码登录
@@ -135,7 +131,10 @@ async fn complete_treehole_login(store: &Store, iaaa_token: &str, device_uuid: &
 
     // 先访问 version 接口刷新 cookies
     let version_resp = client
-        .get(format!("{TREEHOLE_BASE}/chapi/version?t={}", chrono::Utc::now().timestamp_millis()))
+        .get(format!(
+            "{TREEHOLE_BASE}/chapi/version?t={}",
+            chrono::Utc::now().timestamp_millis()
+        ))
         .header("authorization", format!("Bearer {jwt_token}"))
         .header("uuid", &full_uuid)
         .send()
@@ -248,14 +247,14 @@ pub fn status() -> Result<()> {
             if let Some(uid) = &s.uid {
                 println!("  uid        = {uid}");
             }
-            println!(
-                "  token      = {}...",
-                &s.token[..40.min(s.token.len())]
-            );
+            println!("  token      = {}...", &s.token[..40.min(s.token.len())]);
             if let Some(exp) = s.expires_at {
                 println!("  expires_at = {}", format_timestamp(exp));
             }
-            println!("  created_at = {}", s.created_at.format("%Y-%m-%d %H:%M:%S UTC"));
+            println!(
+                "  created_at = {}",
+                s.created_at.format("%Y-%m-%d %H:%M:%S UTC")
+            );
             println!("  config dir = {}", store.config_dir().display());
         }
         None => {
