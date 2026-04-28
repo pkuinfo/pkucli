@@ -2,7 +2,7 @@
 name = "pku-claspider"
 description = "北大课程信息爬取工具（教务部 + 选课网）"
 readme = "README.md"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true

@@ -39,6 +39,7 @@ clawhub publish ./skills/info-auth  --slug pku-info-auth  --name "PKU Info Auth"
 clawhub publish ./skills/bdkj       --slug pku-bdkj       --name "PKU BDKJ"         --version 1.0.0 --tags "pku,bdkj,classroom,reservation,cli,rust"
 clawhub publish ./skills/cwfw       --slug pku-cwfw       --name "PKU CWFW"         --version 1.0.0 --tags "pku,cwfw,finance,payroll,cli,rust"
 clawhub publish ./skills/portal     --slug pku-portal     --name "PKU Portal"       --version 1.0.0 --tags "pku,portal,classroom,calendar,netfee,wechat,cli,rust"
+clawhub publish ./skills/claspider  --slug pku-claspider  --name "PKU Claspider"    --version 1.0.0 --tags "pku,course,catalog,crawler,cli,rust"
 ```
 
 ### 版本更新

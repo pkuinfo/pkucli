@@ -61,7 +61,7 @@ pku-campuscard = { version = "0.1.3", path = "../campuscard" }
 pku-elective = { version = "0.1.3", path = "../elective" }
 pku-auth = { version = "0.1.2", path = "../info-auth" }
 pkuinfo-spider = { version = "0.1.2", path = "../info-spider" }
-pku-claspider = { version = "0.1.0", path = "../claspider" }
+pku-claspider = { version = "0.1.1", path = "../claspider" }
 pku-bdkj = { version = "0.1.1", path = "../bdkj" }
 pku-cwfw = { version = "0.1.1", path = "../cwfw" }
 pku-portal = { version = "0.1.1", path = "../portal" }
