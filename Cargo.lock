@@ -2354,7 +2354,7 @@ checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
 name = "pku-auth"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -2366,7 +2366,7 @@ dependencies = [
 
 [[package]]
 name = "pku-bdkj"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2384,7 +2384,7 @@ dependencies = [
 
 [[package]]
 name = "pku-campuscard"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2432,7 +2432,7 @@ dependencies = [
 
 [[package]]
 name = "pku-cli"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "clap",
@@ -2451,7 +2451,7 @@ dependencies = [
 
 [[package]]
 name = "pku-course"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "aes",
  "anyhow",
@@ -2481,7 +2481,7 @@ dependencies = [
 
 [[package]]
 name = "pku-cwfw"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "base64",
@@ -2503,7 +2503,7 @@ dependencies = [
 
 [[package]]
 name = "pku-elective"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "anyhow",
  "base64",
@@ -2530,7 +2530,7 @@ dependencies = [
 
 [[package]]
 name = "pku-portal"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2551,7 +2551,7 @@ dependencies = [
 
 [[package]]
 name = "pku-treehole"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2575,7 +2575,7 @@ dependencies = [
 
 [[package]]
 name = "pkuinfo-common"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "anyhow",
  "base64",
@@ -2606,7 +2606,7 @@ dependencies = [
 
 [[package]]
 name = "pkuinfo-spider"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "chrono",

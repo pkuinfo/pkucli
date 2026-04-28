@@ -1,7 +1,7 @@
 [package]
 name = "pku-bdkj"
 description = "北大空间（学术研讨教室预约）CLI 客户端"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true

@@ -16,14 +16,14 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/pkuinfo/pkucli"
 authors = ["pkuinfo team"]
 
 [workspace.dependencies]
-pkuinfo-common = { version = "0.1.2", path = "crates/common" }
+pkuinfo-common = { version = "0.1.3", path = "crates/common" }
 reqwest = { version = "0.12", features = ["cookies", "gzip", "brotli", "json"] }
 reqwest_cookie_store = "0.8"
 cookie_store = "0.21"
@@ -47,5 +47,16 @@ qrcode = { version = "0.14", default-features = false }
 
 [profile.release]
 opt-level = 3
-lto = "thin"
+lto = "fat"
+codegen-units = 1
 strip = true
+panic = "abort"
+
+[profile.dev]
+debug = "line-tables-only"
+split-debuginfo = "unpacked"
+incremental = true
+
+[profile.dev.package."*"]
+debug = false
+opt-level = 0

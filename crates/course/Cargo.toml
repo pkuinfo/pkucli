@@ -2,7 +2,7 @@
 name = "pku-course"
 description = "北大教学网 CLI 客户端"
 readme = "README.md"
-version = "0.1.2"
+version = "0.1.3"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
