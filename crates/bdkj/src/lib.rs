@@ -182,3 +182,5 @@ pub async fn dispatch(command: Commands) -> Result<()> {
     }
     Ok(())
 }
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

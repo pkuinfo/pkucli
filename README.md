@@ -18,10 +18,45 @@ A unified command-line toolkit for Peking University services — treehole, cour
 
 ## Getting Started
 
+### Prerequisites
+
+You need a Rust toolchain (`rustup` recommended).
+
+**Linux** additionally needs system libraries used by two transitive `-sys` crates:
+
+| Package | Used by | Purpose |
+| --- | --- | --- |
+| `pkg-config` | build system | locate the libs below |
+| OpenSSL dev headers (`libssl-dev` / `openssl-devel`) | `openssl-sys` ← `reqwest`'s `native-tls` | HTTPS to PKU services |
+| D-Bus dev headers (`libdbus-1-dev` / `dbus-devel`) | `libdbus-sys` ← `keyring`'s Linux Secret Service backend | store/read IAAA credentials |
+| C toolchain (`build-essential` / `gcc`) | linker for the above | compile native code |
+
+One-liners:
+
+```bash
+# Debian / Ubuntu
+sudo apt install -y pkg-config libssl-dev libdbus-1-dev build-essential
+
+# Fedora / RHEL
+sudo dnf install -y pkg-config openssl-devel dbus-devel gcc
+
+# Arch
+sudo pacman -S --needed pkgconf openssl dbus base-devel
+```
+
+> [!NOTE]
+> At runtime, `info-auth store` on Linux talks to a running **Secret Service**
+> (GNOME Keyring, KWallet, KeePassXC, …). On a headless server without one,
+> fall back to env vars: `export PKU_USERNAME=… PKU_PASSWORD=…`.
+
+**macOS** and **Windows** need no extra system packages — `native-tls` uses
+Security framework / SChannel and `keyring` uses Keychain / Credential Manager.
+Just install the Rust toolchain.
+
 ### Install
 
 ```bash
-cargo install pku-cli
+cargo install pku-cli --locked
 ```
 
 One command installs the unified `pku` binary with access to all tools:

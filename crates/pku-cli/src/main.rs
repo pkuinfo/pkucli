@@ -1,6 +1,22 @@
 use clap::{Parser, Subcommand};
 use std::ffi::OsString;
 
+const PKU_CLI_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// (display name, crate name on crates.io, embedded version)
+const SUB_VERSIONS: &[(&str, &str, &str)] = &[
+    ("treehole", "pku-treehole", pku_treehole::VERSION),
+    ("course", "pku-course", pku_course::VERSION),
+    ("campuscard", "pku-campuscard", pku_campuscard::VERSION),
+    ("elective", "pku-elective", pku_elective::VERSION),
+    ("info-auth", "pku-auth", pku_auth::VERSION),
+    ("info-spider", "pkuinfo-spider", pkuinfo_spider::VERSION),
+    ("claspider", "pku-claspider", pku_claspider::VERSION),
+    ("bdkj", "pku-bdkj", pku_bdkj::VERSION),
+    ("cwfw", "pku-cwfw", pku_cwfw::VERSION),
+    ("portal", "pku-portal", pku_portal::VERSION),
+];
+
 #[derive(Parser)]
 #[command(
     name = "pku",
@@ -76,6 +92,17 @@ enum Tools {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<OsString>,
     },
+    /// 列出 pku-cli 自身和所有捆绑子工具的版本
+    Version,
+    /// 检查并升级 pku-cli（连同所有子 crate）到 crates.io 最新版
+    Update {
+        /// 仅检查是否有新版，不实际安装
+        #[arg(long)]
+        check: bool,
+        /// 跳过 cargo install --locked 的 lockfile 检查
+        #[arg(long)]
+        no_locked: bool,
+    },
 }
 
 fn prepend_name(name: &str, args: &[OsString]) -> Vec<OsString> {
@@ -125,6 +152,101 @@ async fn main() -> anyhow::Result<()> {
         Tools::Bdkj { args } => pku_bdkj::run_from(prepend_name("bdkj", &args)).await,
         Tools::Cwfw { args } => pku_cwfw::run_from(prepend_name("cwfw", &args)).await,
         Tools::Portal { args } => pku_portal::run_from(prepend_name("portal", &args)).await,
+        Tools::Version => {
+            print_versions();
+            Ok(())
+        }
+        Tools::Update { check, no_locked } => run_update(check, no_locked).await,
     };
     handle_clap_error(result)
+}
+
+fn print_versions() {
+    println!("pku-cli {PKU_CLI_VERSION}");
+    let max_name = SUB_VERSIONS
+        .iter()
+        .map(|(n, _, _)| n.len())
+        .max()
+        .unwrap_or(0);
+    for (display, crate_name, ver) in SUB_VERSIONS {
+        println!("  {display:<max_name$}  {ver:<8}  ({crate_name})");
+    }
+}
+
+async fn run_update(check_only: bool, no_locked: bool) -> anyhow::Result<()> {
+    use anyhow::Context;
+    use std::process::Command;
+
+    println!("[*] 查询 crates.io 上 pku-cli 的最新版...");
+    // 显式 --registry crates-io，兼容 USTC/RsProxy 等镜像源场景
+    let mut output = tokio::task::spawn_blocking(|| {
+        Command::new("cargo")
+            .args(["search", "pku-cli", "--limit", "1"])
+            .output()
+    })
+    .await?
+    .context("执行 `cargo search pku-cli` 失败（请确认 cargo 已安装）")?;
+    if !output.status.success()
+        && String::from_utf8_lossy(&output.stderr).contains("crates-io is replaced")
+    {
+        output = tokio::task::spawn_blocking(|| {
+            Command::new("cargo")
+                .args([
+                    "search",
+                    "pku-cli",
+                    "--limit",
+                    "1",
+                    "--registry",
+                    "crates-io",
+                ])
+                .output()
+        })
+        .await?
+        .context("执行 `cargo search` (--registry crates-io) 失败")?;
+    }
+    if !output.status.success() {
+        anyhow::bail!(
+            "cargo search 失败: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // 输出形如：`pku-cli = "0.1.4"    # PKU 命令行工具集...`
+    let latest = stdout
+        .lines()
+        .find(|l| l.starts_with("pku-cli "))
+        .and_then(|l| l.split('"').nth(1))
+        .context("未能从 cargo search 输出解析出最新版本")?;
+
+    println!("    本地: {PKU_CLI_VERSION}");
+    println!("    crates.io: {latest}");
+
+    if latest == PKU_CLI_VERSION {
+        println!("[=] 已是最新版本，无需升级。");
+        return Ok(());
+    }
+
+    if check_only {
+        println!("[!] 发现新版本 {latest}，运行 `pku update` 完成升级。");
+        return Ok(());
+    }
+
+    println!("[*] 正在执行 `cargo install pku-cli --force{}`...", if no_locked { "" } else { " --locked" });
+    let mut args = vec!["install", "pku-cli", "--force"];
+    if !no_locked {
+        args.push("--locked");
+    }
+    let status = tokio::task::spawn_blocking(move || {
+        Command::new("cargo")
+            .args(&args)
+            .status()
+    })
+    .await?
+    .context("执行 cargo install 失败")?;
+
+    if !status.success() {
+        anyhow::bail!("cargo install 退出码非零；可尝试 `pku update --no-locked` 重试");
+    }
+    println!("[+] 升级完成。");
+    Ok(())
 }

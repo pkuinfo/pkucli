@@ -167,3 +167,5 @@ fn parse_captcha_backend(s: &str) -> Result<CaptchaConfig> {
         other => return Err(anyhow::anyhow!("未知验证码后端: {other}")),
     })
 }
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

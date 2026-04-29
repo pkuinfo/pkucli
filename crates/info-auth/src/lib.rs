@@ -217,3 +217,5 @@ fn try_read_username() -> Result<Option<String>> {
         Err(_) => Ok(None),
     }
 }
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

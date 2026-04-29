@@ -189,3 +189,5 @@ async fn handle_otp(action: OtpAction, config_dir: &std::path::Path) -> anyhow::
     }
     Ok(())
 }
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

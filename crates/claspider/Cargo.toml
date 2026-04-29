@@ -2,7 +2,7 @@
 name = "pku-claspider"
 description = "北大课程信息爬取工具（教务部 + 选课网）"
 readme = "README.md"
-version = "0.1.1"
+version = "0.1.2"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -16,7 +16,7 @@ path = "src/main.rs"
 
 [dependencies]
 pkuinfo-common.workspace = true
-pku-elective = { version = "0.1.3", path = "../elective" }
+pku-elective = { version = "0.1.4", path = "../elective" }
 clap = { workspace = true, features = ["env"] }
 tokio = { workspace = true, features = ["time"] }
 reqwest.workspace = true

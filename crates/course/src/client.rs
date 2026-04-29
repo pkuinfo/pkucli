@@ -22,11 +22,10 @@ pub fn build(cookie_store: Arc<CookieStoreMutex>) -> anyhow::Result<reqwest::Cli
         ),
     );
 
-    let client = reqwest::Client::builder()
+    let builder = reqwest::Client::builder()
         .cookie_provider(cookie_store)
-        .default_headers(headers)
-        .build()?;
-    Ok(client)
+        .default_headers(headers);
+    Ok(pkuinfo_common::tls::apply_extra_roots(builder)?.build()?)
 }
 
 /// 构建带内置 cookie 管理的客户端（用于 IAAA 认证）
@@ -39,9 +38,8 @@ pub fn build_simple() -> anyhow::Result<reqwest::Client> {
         ),
     );
 
-    let client = reqwest::Client::builder()
+    let builder = reqwest::Client::builder()
         .cookie_store(true)
-        .default_headers(headers)
-        .build()?;
-    Ok(client)
+        .default_headers(headers);
+    Ok(pkuinfo_common::tls::apply_extra_roots(builder)?.build()?)
 }

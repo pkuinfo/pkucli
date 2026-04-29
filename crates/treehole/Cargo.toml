@@ -2,7 +2,7 @@
 name = "pku-treehole"
 description = "北大树洞 CLI 客户端"
 readme = "README.md"
-version = "0.1.4"
+version = "0.1.5"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true

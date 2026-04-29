@@ -13,6 +13,7 @@ pub mod display;
 pub mod elective_query;
 pub mod model;
 pub mod zhiyun;
+pub mod zhiyun_auto;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -62,11 +63,17 @@ pub enum Commands {
         json: bool,
     },
 
-    /// 从智云课堂抓取课程（需要 JWT token）
+    /// 从智云课堂抓取课程
+    ///
+    /// 不指定 `--token` 时，会复用 `course` (教学网) 已建立的会话，自动走录播 SSO
+    /// 拿到 JWT 并缓存 15 小时。手动指定 `--token` 仍可绕过自动流程。
     Zhiyun {
-        /// JWT token（从浏览器 onlineroomse.pku.edu.cn 的 _token cookie 中提取）
+        /// JWT token（不指定则通过教学网自动获取）
         #[arg(short = 't', long, env = "ZHIYUN_JWT")]
-        token: String,
+        token: Option<String>,
+        /// 强制刷新自动获取的 token（忽略本地缓存）
+        #[arg(long)]
+        refresh: bool,
         /// 查询周的起始日期（周一），如 "2026-04-13"
         #[arg(short, long)]
         week: String,
@@ -89,9 +96,15 @@ pub enum Commands {
         /// 按院系代码筛选
         #[arg(short, long)]
         department: Option<String>,
-        /// 智云 JWT token（可选，提供则加入三方合并）
+        /// 智云 JWT token（可选，不指定则通过教学网自动获取并加入三方合并）
         #[arg(long, env = "ZHIYUN_JWT")]
         zhiyun_token: Option<String>,
+        /// 同时启用智云数据源（自动从教学网 SSO 取 token）
+        #[arg(long)]
+        with_zhiyun: bool,
+        /// 强制刷新自动获取的智云 token
+        #[arg(long)]
+        zhiyun_refresh: bool,
         /// 智云查询周起始日期
         #[arg(long, default_value = "2026-04-13")]
         zhiyun_week: Option<String>,
@@ -165,10 +178,15 @@ async fn dispatch(command: Commands) -> Result<()> {
 
         Commands::Zhiyun {
             token,
+            refresh,
             week,
             details,
             json,
         } => {
+            let token = match token {
+                Some(t) => t,
+                None => zhiyun_auto::acquire_token(refresh).await?,
+            };
             let courses = zhiyun::fetch_all(&token, &week, details).await?;
             if json {
                 println!("{}", serde_json::to_string_pretty(&courses)?);
@@ -182,9 +200,16 @@ async fn dispatch(command: Commands) -> Result<()> {
             category,
             department,
             zhiyun_token,
+            with_zhiyun,
+            zhiyun_refresh,
             zhiyun_week,
             json,
         } => {
+            let zhiyun_token = match (zhiyun_token, with_zhiyun) {
+                (Some(t), _) => Some(t),
+                (None, true) => Some(zhiyun_auto::acquire_token(zhiyun_refresh).await?),
+                (None, false) => None,
+            };
             let merged = model::merge_sources(
                 &semester,
                 &category,
@@ -202,3 +227,5 @@ async fn dispatch(command: Commands) -> Result<()> {
     }
     Ok(())
 }
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -1,7 +1,7 @@
 [package]
 name = "pku-portal"
 description = "北京大学校内信息门户 CLI — 空闲教室 / 校历 / 网费"
-version = "0.1.1"
+version = "0.1.2"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
