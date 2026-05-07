@@ -35,6 +35,9 @@ pub enum Commands {
         /// 用系统图片查看器打开二维码（默认终端渲染）
         #[arg(long)]
         open: bool,
+        /// 手动指定一次性 OTP 码（覆盖本地保存的 TOTP secret，用于 secret 失效时）
+        #[arg(long)]
+        otp: Option<String>,
     },
     /// 查看当前登录状态
     Status,
@@ -119,9 +122,10 @@ pub async fn dispatch(command: Commands) -> Result<()> {
             password,
             username,
             open,
+            otp,
         } => {
             if password {
-                login::login_with_password(username.as_deref()).await?;
+                login::login_with_password(username.as_deref(), otp.as_deref()).await?;
             } else {
                 let qr_mode = if open {
                     pkuinfo_common::qr::QrDisplayMode::Open

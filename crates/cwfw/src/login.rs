@@ -27,7 +27,7 @@ fn iaaa_config() -> IaaaConfig {
 }
 
 /// 用户名密码登录
-pub async fn login_with_password(username: Option<&str>) -> Result<()> {
+pub async fn login_with_password(username: Option<&str>, otp_override: Option<&str>) -> Result<()> {
     let store = Store::new(APP_NAME)?;
     check_existing_session(&store)?;
 
@@ -36,10 +36,16 @@ pub async fn login_with_password(username: Option<&str>) -> Result<()> {
     let simple_client = client::build_simple()?;
     let config = iaaa_config();
 
-    let otp_code = pkuinfo_common::otp::get_current_otp(store.config_dir())?;
-    if otp_code.is_some() {
-        println!("{} 已自动填入手机令牌", "[otp]".cyan());
-    }
+    let otp_code = if let Some(code) = otp_override {
+        println!("{} 使用命令行传入的一次性 OTP", "[otp]".cyan());
+        Some(code.to_string())
+    } else {
+        let code = pkuinfo_common::otp::get_current_otp(store.config_dir())?;
+        if code.is_some() {
+            println!("{} 已自动填入手机令牌", "[otp]".cyan());
+        }
+        code
+    };
     let iaaa_token = iaaa::login_password(
         &simple_client,
         &config,
