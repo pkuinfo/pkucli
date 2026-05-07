@@ -40,6 +40,8 @@ cargo run --bin info-auth -- check     # check all session status
 cargo run --bin info-auth -- status    # check keyring status
 cargo run --bin bdkj -- login -p
 cargo run --bin bdkj -- list           # list classroom reservations
+cargo run --bin portal -- free-classroom 一教 --day today
+cargo run --bin portal -- netfee status
 
 # Tests (currently no test files exist)
 cargo test --workspace
@@ -47,15 +49,19 @@ cargo test --workspace
 
 ## Architecture
 
-11 crates in a Cargo workspace. One shared library (`common`), one meta install bundle (`pku-cli`), the rest are CLI binaries against PKU services.
+12 crates in a Cargo workspace. One shared library (`common`), one meta install bundle (`pku-cli`), the rest are CLI binaries against PKU services.
 
 ```
-common (pkuinfo-common, lib)    Shared: IAAA auth, OTP, session/cookie persistence, QR, credential resolution
+common (pkuinfo-common, lib)    Shared: IAAA auth, OTP, session/cookie persistence, QR, credential resolution, captcha, TLS
     ├── iaaa.rs            PKU unified auth (password + QR code login)
     ├── otp.rs             TOTP code generation (RFC 6238, for IAAA 手机令牌)
     ├── session.rs         Session/CookieStore JSON persistence → ~/.config/info/<name>/
     ├── credential.rs      Unified credential resolution: session → keyring → env → interactive
-    └── qr.rs              Terminal QR display (viuer) or system viewer
+    ├── qr.rs              Terminal QR display (viuer) or system viewer
+    ├── captcha.rs         Pluggable CAPTCHA recognition: Manual / Utool (free) / TTShiTu / 云码
+    └── tls.rs             Embedded GlobalSign AlphaSSL CA 2025 intermediate cert — fixes broken
+                           chain on course.pku.edu.cn (server omits correct intermediate); call
+                           `tls::apply_extra_roots(builder)` in every crate's client.rs
 
 info-auth (bin)            Credential management CLI — store/clear/check IAAA credentials
     Uses: common for keyring operations
@@ -107,6 +113,14 @@ info-spider (bin)          WeChat Official Account article crawler
 
 claspider (bin)            PKU 课程信息爬取（教务部 + 选课网）— bulk scraping for course catalog data
 
+portal (bin)               PKU 校内信息门户 CLI (portal.pku.edu.cn)
+    Auth: independent username/password + CAPTCHA (does NOT use IAAA)
+    Features: `portal free-classroom <楼>` — 空闲教室查询
+              `portal calendar` — 校历显示
+              `portal netfee status/recharge/watch` — 网费查询/充值/低余额监控
+    CAPTCHA: uses `common::captcha` (Utool default, configurable)
+    Config: ~/.config/info/portal/ (follows common Store convention)
+
 pku-cli (bin meta)         Meta crate that re-exports the per-service binaries so users can
     `cargo install pku-cli` and get them all at once. Note that the same bin name
     (`course`, `treehole`, ...) is defined in BOTH the original crate and pku-cli, so
@@ -152,7 +166,7 @@ Every crate has a `client.rs` with two builders:
 - `build(cookie_store: Arc<CookieStoreMutex>)` — for authenticated requests, persistent cookies
 - `build_simple()` — for IAAA login only (internal cookie jar, JSESSIONID handling)
 
-Both set a realistic User-Agent. Treehole uses `redirect(Policy::none())` for manual redirect handling. Campuscard uses mobile UA (`PKUANDROID`) and requires `http1_only()` (server doesn't support HTTP/2).
+Both set a realistic User-Agent. All builders call `tls::apply_extra_roots()` from `pkuinfo_common::tls` to inject the embedded AlphaSSL CA cert. Treehole uses `redirect(Policy::none())` for manual redirect handling. Campuscard uses mobile UA (`PKUANDROID`) and requires `http1_only()` (server doesn't support HTTP/2).
 
 ## Key Conventions
 
