@@ -1,7 +1,7 @@
 ---
 name: portal
 description: "北京大学校内信息门户 (portal.pku.edu.cn / its.pku.edu.cn) CLI 工具。当用户提及 portal、校内信息门户、空闲教室、空教室、教室查询、一教/二教/三教/四教/理教空闲、校历、学年校历、上课时间、网费、网费余额、网费充值、上网账号、查余额、微信充值网费、支付宝充值网费 时使用此 skill。也支持 `portal netfee watch --threshold` 做低余额监测（低于阈值退出码 2，适合 cron 报警）。Also use when dealing with `/publicQuery/classroomQuery/retrClassRoomFree.do`、simso 校历 Vue bundle、its.pku.edu.cn `/cas/webLogin` / `/cas/ITSweb` / `/myConn.jsp` / `/netportal/itsUtil?operation=info`、或 `/paybank/user.PayBankOrderPKU` → cwsf.pku.edu.cn `/PayPreService/pay/cashier/gotToPay` 3 步充值流程。"
-version: 1.0.0
+version: 1.1.0
 ---
 
 # portal - 北大校内信息门户 CLI
@@ -16,7 +16,7 @@ A CLI client for PKU's campus info portal — 空闲教室、校历、网费 in 
   - 网费：its.pku.edu.cn 自己的上网账号密码（**不是** IAAA SSO），复用 `pkuinfo_common::credential`（多数学生上网密码与 IAAA 相同）
 - **API**:
   - 空闲教室：`GET /publicQuery/classroomQuery/retrClassRoomFree.do?buildingName=<中文>&time=<中文>`，返回 `{success, rows:[{room, cap, c1..c12}]}`
-  - 校历：simso.pku.edu.cn 是 Vue SPA，数据硬编码在 `js/ccSchoolCalendar.<hash>.js` bundle 里；先抓 HTML 取 bundle 文件名，再正则抽 `t._v("...")` 文本
+  - 校历：simso.pku.edu.cn 是 Vue SPA，数据硬编码在 `js/ccSchoolCalendar.<hash>.js` bundle 里。**真正的 `_v("...")` 文本节点都在 webpack render 函数里，不在 `{name:"Calendar…"` 元数据块里**。simso 开发者经常原地复用老 .vue 文件改内容、不更新内部 `name:`，所以按内部命名匹配会拿错学年。正确做法：tab pane label → Home `Calendar<tag>:<var>` → `<var>=<mod>.exports` → `<mod>=Object(o["a"])(<data>,<render>,…)` → 在 `<render>` 函数体内按 `"第一学期"===t.xq?[` / `"第二学期"===t.xq?[` 切分上/下学期
   - 网费状态：`POST /cas/webLogin` → `/netportal/itsUtil?operation=info`（HTML 表含余额）→ `POST /cas/ITSweb cmd=select` → `GET /myConn.jsp`（在线 IP 会话）
   - 网费充值：3 步 `pkuConfirm` → `pkuSendOrder` → cwsf.pku.edu.cn 收银台 AJAX `/PayPreService/pay/cashier/gotToPay` 返回 `{data:{urlCode}}`
 - **验证码**：复用 `pkuinfo_common::captcha`（manual / utool 免费 / ttshitu / yunma）
@@ -35,7 +35,7 @@ A CLI client for PKU's campus info portal — 空闲教室、校历、网费 in 
 | Command | 用途 |
 |---------|-----|
 | `free-classroom <building> [-d today\|tomorrow\|day-after]` / `fc` | 查询空闲教室。building: 一教/二教/三教/四教/理教/文史/哲学/地学/国关/政管 |
-| `calendar [-y 2025-2026]` / `cal` | 显示校历（best-effort 从 simso JS bundle 抽取） |
+| `calendar [-y 2025-2026] [-s first\|second\|all]` / `cal` | 显示校历。`--semester` 可选 first/second/all（也接受 1/2/上/下） |
 | `netfee status` | 余额 + 在线会话 |
 | `netfee recharge <amount> [-m wechat\|alipay] [--captcha utool]` | 充值，终端打印微信/支付宝付款二维码 |
 | `netfee watch --threshold 10` | 低余额监测，余额 < 阈值返回退出码 2 |
@@ -45,7 +45,7 @@ A CLI client for PKU's campus info portal — 空闲教室、校历、网费 in 
 ```bash
 info-auth check
 portal free-classroom 一教            # 无需登录
-portal calendar --year 2025-2026      # 无需登录
+portal calendar --year 2025-2026 --semester first   # 无需登录
 portal netfee status                  # 需要 keyring 凭据
 portal netfee recharge 10 -m wechat   # 微信扫码付款，二维码直接打终端
 portal netfee watch -t 5 || notify "PKU netfee low"
