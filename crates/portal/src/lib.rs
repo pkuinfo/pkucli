@@ -43,6 +43,9 @@ pub enum Commands {
         /// 只显示指定学年（如 2025-2026）
         #[arg(short, long)]
         year: Option<String>,
+        /// 学期：first / second / all（默认 all；可用 1/2/上/下）
+        #[arg(short, long, default_value = "all")]
+        semester: String,
     },
 
     /// 网费相关（查询 / 充值 / 低余额监测）
@@ -104,9 +107,10 @@ pub async fn dispatch(command: Commands) -> Result<()> {
             let rows = freeclassroom::query(&building, day).await?;
             freeclassroom::render(&building, day, &rows);
         }
-        Commands::Calendar { year } => {
+        Commands::Calendar { year, semester } => {
+            let sem = calendar::Semester::parse(&semester)?;
             let cals = calendar::fetch().await?;
-            calendar::render(&cals, year.as_deref());
+            calendar::render(&cals, year.as_deref(), sem);
         }
         Commands::Netfee { action } => match action {
             NetfeeAction::Status { username } => {
