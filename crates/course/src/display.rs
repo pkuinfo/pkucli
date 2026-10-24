@@ -4,7 +4,9 @@ use crate::api::{
     self, Announcement, AnnouncementSummary, AssignmentDetail, AssignmentSummary, ContentItem,
     ContentType, CourseEntry, CourseInfo, VideoInfo,
 };
+use crate::ta;
 use colored::Colorize;
+use std::collections::HashMap;
 
 /// 打印课程列表
 pub fn print_courses(courses: &[CourseInfo]) {
@@ -280,4 +282,184 @@ pub fn print_announcement_summary(summary: &AnnouncementSummary) {
         let body = truncate_display(&ann.body, 200);
         println!("  {}", body);
     }
+}
+
+// ─── 助教 ──────────────────────────────────────────────────────
+
+/// 内容类型的中文名
+pub fn kind_label(handler: &str) -> &str {
+    match handler {
+        ta::FOLDER => "文件夹",
+        ta::ASSIGNMENT => "作业",
+        "resource/x-bb-file" => "文件",
+        "resource/x-bb-document" => "项目",
+        "resource/x-bb-externallink" => "链接",
+        other => other.strip_prefix("resource/x-bb-").unwrap_or(other),
+    }
+}
+
+/// 提交状态的中文名
+pub fn status_label(status: Option<&str>) -> colored::ColoredString {
+    match status {
+        Some("NeedsGrading") => "待评分".yellow(),
+        Some("Completed") => "已评分".green(),
+        Some("InProgress") => "未提交完".dimmed(),
+        Some(s) => s.normal(),
+        None => "未提交".dimmed(),
+    }
+}
+
+fn fmt_utc(s: &str) -> String {
+    chrono::DateTime::parse_from_rfc3339(s)
+        .map(|t| {
+            t.with_timezone(&chrono::Local)
+                .format("%Y-%m-%d %H:%M")
+                .to_string()
+        })
+        .unwrap_or_else(|_| s.to_string())
+}
+
+/// 打印内容区/文件夹里的条目（含隐藏条目）
+pub fn print_ta_contents(title: &str, id: &str, items: &[ta::Content]) {
+    println!("{} {}", title.bold(), id.dimmed());
+    if items.is_empty() {
+        println!("  {}", "（空）".dimmed());
+    }
+    for c in items {
+        let hidden = if c.is_visible() {
+            String::new()
+        } else {
+            format!(" {}", "[对学生隐藏]".yellow())
+        };
+        println!(
+            "  {}  {:<4} {}{}",
+            c.id.dimmed(),
+            kind_label(c.handler()),
+            c.title,
+            hidden
+        );
+    }
+}
+
+/// 打印成绩中心的列
+pub fn print_ta_columns(columns: &[ta::Column]) {
+    for c in columns {
+        let kind = match c.kind() {
+            "Calculated" => "计算列·只读".red(),
+            "Attempts" => "作业".cyan(),
+            "Manual" => "手动".normal(),
+            other => other.normal(),
+        };
+        let possible = c
+            .possible()
+            .map(ta::fmt_score)
+            .unwrap_or_else(|| "-".into());
+        let due = c
+            .grading
+            .as_ref()
+            .and_then(|g| g.due.as_deref())
+            .map(|d| format!("  截止 {}", fmt_utc(d)))
+            .unwrap_or_default();
+        println!(
+            "  {}  {}  [{}]  满分 {}{}",
+            c.id.dimmed(),
+            c.name,
+            kind,
+            possible,
+            due.dimmed()
+        );
+    }
+}
+
+/// 打印学生名单
+pub fn print_ta_roster(students: &[ta::Student]) {
+    for s in students {
+        let flag = if s.available {
+            String::new()
+        } else {
+            format!(" {}", "[已停用]".dimmed())
+        };
+        println!("  {}  {}  {}{}", s.user_name, s.name, s.dept.dimmed(), flag);
+    }
+    println!(
+        "\n共 {} 名学生（已排除预览账号）",
+        students.len().to_string().bold()
+    );
+}
+
+/// 打印某次作业每个学生的最新提交状态
+pub fn print_ta_attempts(
+    col: &ta::Column,
+    students: &[ta::Student],
+    by_user: &HashMap<String, Vec<ta::Attempt>>,
+    needs_grading: bool,
+) {
+    println!("{} {}", col.name.bold(), col.id.dimmed());
+    let (mut submitted, mut pending) = (0, 0);
+    for s in students {
+        let list = by_user.get(&s.user_id);
+        let latest = list.and_then(|l| l.last());
+        let status = latest.and_then(|a| a.status.as_deref());
+        if latest.is_some() {
+            submitted += 1;
+        }
+        if status == Some("NeedsGrading") {
+            pending += 1;
+        }
+        if needs_grading && status != Some("NeedsGrading") {
+            continue;
+        }
+        let score = latest
+            .and_then(|a| a.score)
+            .map(ta::fmt_score)
+            .unwrap_or_default();
+        let times = match list.map_or(0, Vec::len) {
+            0 | 1 => String::new(),
+            n => format!(" ({n} 次)"),
+        };
+        println!(
+            "  {}  {:<6} {} {}{}",
+            s.user_name,
+            s.name,
+            status_label(status),
+            score.bold(),
+            times.dimmed()
+        );
+    }
+    println!(
+        "\n已提交 {}/{}，待评分 {}",
+        submitted,
+        students.len(),
+        pending.to_string().yellow()
+    );
+}
+
+/// 打印课堂实录列表（序号即 publish/unpublish 用的序号）
+pub fn print_ta_recordings(list: &[ta::Recording]) {
+    if list.is_empty() {
+        println!("{}", "暂无课堂实录".dimmed());
+        return;
+    }
+    let mut unpublished = 0;
+    for (i, r) in list.iter().enumerate() {
+        let state = if r.published {
+            "已发布".green()
+        } else {
+            unpublished += 1;
+            "未发布".yellow()
+        };
+        println!(
+            "  {:>2}. {}  {}  {}  {}",
+            i + 1,
+            r.time,
+            r.title,
+            state,
+            r.sub_id.dimmed()
+        );
+    }
+    println!(
+        "\n共 {} 节，未发布 {}",
+        list.len(),
+        unpublished.to_string().yellow()
+    );
 }

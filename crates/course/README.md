@@ -9,7 +9,7 @@
 
 </div>
 
-Manage your PKU Blackboard Learn courses from the terminal: browse content, track assignments, download files and lecture recordings, and submit homework -- all without opening a browser.
+Manage your PKU Blackboard Learn courses from the terminal: browse content, track assignments, download files and lecture recordings, and submit homework -- all without opening a browser. Teaching assistants can also post content, create assignments, download submissions and grade them.
 
 ## Install
 
@@ -85,6 +85,29 @@ course download <url>            # Download any file by URL
 course download <url> -o ./out   # Custom output directory
 ```
 
+### Teaching Assistant (助教)
+
+For course staff. Every write only previews by default; add `--yes` to actually write.
+
+```bash
+course ta ls <course> [folder]               # Content areas / folder items, incl. hidden
+course ta columns <course>                   # Grade Center columns
+course ta roster <course>                    # Students (preview accounts excluded)
+course ta attempts <course> <column>         # Who submitted, who still needs grading
+
+course ta post <course> 教学内容 slides.pdf   # Publish a file item
+course ta assign <course> 课程作业 -t "第六章作业" --due "2026-11-08 23:59" -f hw6.pdf
+
+course ta download <course> <column>         # All submissions + 成绩模板.csv
+course ta grade <course> <column> <学号> -s 95 --feedback "推导清楚" -f comments.pdf
+course ta grade-batch <course> <column> 成绩模板.csv --files-dir ./feedback
+
+course ta videos <course>                    # 课堂实录 and publish state
+course ta publish <course>                   # Publish all unpublished recordings
+```
+
+Calculated columns (总计 / 加权总计) are never written, and student-preview accounts (`*_previewuser`) are left out of rosters, downloads and batch grading.
+
 ### TOTP (手机令牌)
 
 ```bash
@@ -94,7 +117,9 @@ course otp show                  # Display current OTP
 
 ## How It Works
 
-PKU's Blackboard Learn has no public API, so this tool scrapes HTML pages using the [`scraper`](https://crates.io/crates/scraper) crate. Assignment deadlines, course structure, and video URLs are all parsed from the web UI. File uploads use multipart forms.
+The student-side commands scrape HTML pages using the [`scraper`](https://crates.io/crates/scraper) crate. Assignment deadlines, course structure, and video URLs are all parsed from the web UI. File uploads use multipart forms.
+
+The `ta` commands use Blackboard's public REST API (`/learn/api/public/v1`), which accepts the same session cookie; writes carry the page's XSRF nonce. Where REST is broken on course.pku.edu.cn (attempt file download, grading with feedback files), they fall back to the classic web forms and verify the result over REST.
 
 ## Links
 

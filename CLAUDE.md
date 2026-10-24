@@ -83,7 +83,15 @@ treehole (bin)             PKU Treehole anonymous forum + academic info CLI
 
 course (bin)               PKU Teaching Network (Blackboard Learn) CLI — assignments, files, recordings
     Uses: common for IAAA → Blackboard SSO callback
-    API: HTML scraping with scraper crate (no JSON API), multipart upload
+    API: HTML scraping with scraper crate, multipart upload
+    TA (`course ta`, src/ta.rs): Blackboard public REST /learn/api/public/v1 with the same
+         session cookie; writes need `X-Blackboard-XSRF` = the page's NonceUtil.nonce.ajax.
+         REST attempt-file download and `gradebook/attempts/{id}` are 404 on this server, so
+         downloads use /webapps/assignment/download and grading posts the classic
+         gradeAttemptForm (skip disabled inputs!) then reads back via
+         gradebook/columns/{col}/attempts/{id}. 课堂实录 publish = GET publishVideo.action /
+         unpublishVideo.action links from the modify-mode list. Writes preview unless --yes;
+         calculated columns refused; *_previewuser accounts excluded from lists and batches.
     NOT for course schedule lookups (see treehole).
 
 campuscard (bin)           PKU Campus Card CLI (bdcard.pku.edu.cn, Synjones platform)

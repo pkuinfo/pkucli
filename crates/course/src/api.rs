@@ -396,6 +396,11 @@ impl CourseApi {
         Ok(Self { client })
     }
 
+    /// 底层 HTTP 客户端（助教模块复用同一会话）
+    pub(crate) fn http(&self) -> &reqwest::Client {
+        &self.client
+    }
+
     /// 获取教学网主页 HTML
     async fn get_homepage(&self) -> Result<Html> {
         let url =
@@ -1322,7 +1327,7 @@ pub fn build_iv(key: &m3u8_rs::Key, media_sequence: u64, segment_index: usize) -
 }
 
 /// 根据文件扩展名返回 MIME 类型
-fn get_mime_type(extension: &str) -> &'static str {
+pub(crate) fn get_mime_type(extension: &str) -> &'static str {
     match extension {
         "html" | "htm" => "text/html",
         "txt" => "text/plain",

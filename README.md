@@ -115,7 +115,7 @@ treehole schedule                # This week's schedule
 
 ### Course — 教学网 (Blackboard Learn)
 
-Course management, assignments, lecture recordings.
+Course management, assignments, lecture recordings, and tools for teaching assistants.
 
 ```bash
 course courses --all             # List all courses
@@ -123,6 +123,7 @@ course assignments               # Pending assignments
 course videos                    # Lecture recordings
 course submit                    # Submit homework (interactive)
 course browse                    # Interactive course browser
+course ta --help                 # TA tools: post files, create assignments, grade (writes need --yes)
 ```
 
 ### Campuscard — 校园卡
