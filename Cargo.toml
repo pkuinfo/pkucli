@@ -13,6 +13,7 @@ members = [
     "crates/claspider",
     "crates/bdkj",
     "crates/portal",
+    "crates/disk",
 ]
 resolver = "2"
 

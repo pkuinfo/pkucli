@@ -2443,6 +2443,7 @@ dependencies = [
  "pku-course",
  "pku-cwfw",
  "pku-cwpay",
+ "pku-disk",
  "pku-elective",
  "pku-portal",
  "pku-treehole",
@@ -2520,6 +2521,24 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "pku-disk"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "colored",
+ "futures",
+ "pkuinfo-common",
+ "reqwest",
+ "reqwest_cookie_store",
+ "serde",
+ "serde_json",
+ "tokio",
+ "url",
 ]
 
 [[package]]

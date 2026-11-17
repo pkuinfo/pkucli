@@ -1,6 +1,6 @@
 {
   "name": "pku-cli",
-  "description": "Skills for PKU CLI tools (treehole, course, campuscard, elective, cwfw, cwpay, info-spider)",
+  "description": "Skills for PKU CLI tools (treehole, course, campuscard, elective, cwfw, cwpay, disk, info-spider)",
   "version": "1.0.0",
   "author": {
     "name": "wjsoj"

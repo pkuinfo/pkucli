@@ -115,7 +115,7 @@ treehole schedule                # This week's schedule
 
 ### Course — 教学网 (Blackboard Learn)
 
-Course management, assignments, lecture recordings.
+Course management, assignments, lecture recordings, and tools for teaching assistants.
 
 ```bash
 course courses --all             # List all courses
@@ -123,6 +123,7 @@ course assignments               # Pending assignments
 course videos                    # Lecture recordings
 course submit                    # Submit homework (interactive)
 course browse                    # Interactive course browser
+course ta --help                 # TA tools: post files, create assignments, grade (writes need --yes)
 ```
 
 ### Campuscard — 校园卡
@@ -146,6 +147,16 @@ elective show                    # Current selections
 elective list                    # Available courses
 elective set                     # Pick target courses (interactive)
 elective launch -t 15            # Auto-select loop, 15s interval
+```
+
+### Disk — 北大网盘
+
+Browse and download PKU Netdisk files (read-only): personal, shared and department libraries.
+
+```bash
+disk ls                          # All document libraries
+disk ls 个人/课件                 # Browse a folder
+disk download 个人/课件 -o ./out  # Download a folder, keeping its structure
 ```
 
 ### Info Spider — 微信公众号爬虫
@@ -257,3 +268,4 @@ Credential resolution order:
 | [`pku-elective`](https://crates.io/crates/pku-elective) | bin | Course selection CLI |
 | [`pku-auth`](https://crates.io/crates/pku-auth) | bin | Credential management |
 | [`pkuinfo-spider`](https://crates.io/crates/pkuinfo-spider) | bin | WeChat article crawler |
+| [`pku-disk`](https://crates.io/crates/pku-disk) | bin | PKU Netdisk CLI |

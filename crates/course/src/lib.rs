@@ -4,9 +4,11 @@ pub mod commands;
 mod display;
 pub mod login;
 mod multipart;
+mod ta;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "course", about = "北大教学网 CLI 客户端", version)]
@@ -151,6 +153,12 @@ pub enum Commands {
         #[command(subcommand)]
         action: OtpAction,
     },
+
+    /// 助教工具：发内容、建作业、下载提交、登分（写操作需加 --yes）
+    Ta {
+        #[command(subcommand)]
+        action: TaAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -179,6 +187,175 @@ pub enum OtpAction {
     Show,
     /// 清除已保存的 OTP 配置
     Clear,
+}
+
+/// 助教子命令（写操作默认只预览，加 --yes 才写入）
+#[derive(Subcommand)]
+pub enum TaAction {
+    /// 列出内容区或文件夹里的条目（含对学生隐藏的）
+    Ls {
+        /// 课程 ID、编号或名称
+        course: String,
+        /// 文件夹 ID 或标题（如「教学内容」），不填列出顶层内容区
+        folder: Option<String>,
+    },
+    /// 查看成绩中心的列
+    Columns {
+        /// 课程 ID、编号或名称
+        course: String,
+    },
+    /// 查看学生名单（已排除预览账号）
+    Roster {
+        /// 课程 ID、编号或名称
+        course: String,
+    },
+    /// 查看某次作业的提交和评分情况
+    Attempts {
+        /// 课程 ID、编号或名称
+        course: String,
+        /// 成绩列 ID 或名称（如「第三章作业提交」）
+        column: String,
+        /// 只显示待评分的
+        #[arg(long)]
+        needs_grading: bool,
+    },
+    /// 下载某次作业的全部提交，并生成成绩模板 CSV
+    Download {
+        /// 课程 ID、编号或名称
+        course: String,
+        /// 成绩列 ID 或名称
+        column: String,
+        /// 输出目录（默认以作业名命名）
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// 只下载待评分的
+        #[arg(long)]
+        needs_grading: bool,
+    },
+    /// 在文件夹里发布一个文件条目（教学内容、作业题目等）
+    Post {
+        /// 课程 ID、编号或名称
+        course: String,
+        /// 目标文件夹 ID 或标题
+        folder: String,
+        /// 要上传的文件
+        file: PathBuf,
+        /// 条目标题（默认用文件名）
+        #[arg(short, long)]
+        title: Option<String>,
+        /// 条目说明
+        #[arg(short, long)]
+        desc: Option<String>,
+        /// 先对学生隐藏
+        #[arg(long)]
+        hidden: bool,
+        /// 确认写入（不加只预览）
+        #[arg(short, long)]
+        yes: bool,
+    },
+    /// 新建作业（带提交入口和成绩列）
+    Assign {
+        /// 课程 ID、编号或名称
+        course: String,
+        /// 目标文件夹 ID 或标题（如「课程作业」）
+        folder: String,
+        /// 作业标题
+        #[arg(short, long)]
+        title: String,
+        /// 截止时间，如 "2026-11-01 23:59"；只写日期则为当天 23:59
+        #[arg(long)]
+        due: String,
+        /// 满分
+        #[arg(long, default_value_t = 100.0)]
+        points: f64,
+        /// 允许提交次数，0 为不限
+        #[arg(long, default_value_t = 1)]
+        attempts: u32,
+        /// 题目附件，可重复
+        #[arg(short, long)]
+        file: Vec<PathBuf>,
+        /// 作业说明
+        #[arg(short, long)]
+        instructions: Option<String>,
+        /// 先对学生隐藏
+        #[arg(long)]
+        hidden: bool,
+        /// 确认写入（不加只预览）
+        #[arg(short, long)]
+        yes: bool,
+    },
+    /// 给一名学生的作业登分，可附评语和反馈文件
+    Grade {
+        /// 课程 ID、编号或名称
+        course: String,
+        /// 成绩列 ID 或名称
+        column: String,
+        /// 学号或姓名
+        student: String,
+        /// 分数
+        #[arg(short, long)]
+        score: String,
+        /// 评语（纯文本，换行分段）
+        #[arg(long)]
+        feedback: Option<String>,
+        /// 反馈文件，可重复
+        #[arg(short, long)]
+        file: Vec<PathBuf>,
+        /// 确认写入（不加只预览）
+        #[arg(short, long)]
+        yes: bool,
+    },
+    /// 按 CSV 批量登分（列：学号,姓名,分数,评语，即 download 生成的模板）
+    GradeBatch {
+        /// 课程 ID、编号或名称
+        course: String,
+        /// 成绩列 ID 或名称
+        column: String,
+        /// 成绩 CSV；分数留空的行跳过
+        csv: PathBuf,
+        /// 反馈文件目录：其中文件名以学号开头的文件会作为该生的反馈文件上传
+        #[arg(long)]
+        files_dir: Option<PathBuf>,
+        /// 确认写入（不加只预览）
+        #[arg(short, long)]
+        yes: bool,
+    },
+    /// 查看课堂实录的录像及发布状态
+    Videos {
+        /// 课程 ID、编号或名称
+        course: String,
+    },
+    /// 发布课堂实录录像（不指定则发布全部未发布的）
+    Publish {
+        /// 课程 ID、编号或名称
+        course: String,
+        /// 录像序号、录像 ID 或标题片段（如 10-21），可多个
+        videos: Vec<String>,
+        /// 确认写入（不加只预览）
+        #[arg(short, long)]
+        yes: bool,
+    },
+    /// 撤销课堂实录录像的发布（学生将看不到）
+    Unpublish {
+        /// 课程 ID、编号或名称
+        course: String,
+        /// 录像序号、录像 ID 或标题片段，可多个
+        #[arg(required = true)]
+        videos: Vec<String>,
+        /// 确认写入（不加只预览）
+        #[arg(short, long)]
+        yes: bool,
+    },
+    /// 删除内容条目（作业已有学生提交、文件夹非空时拒绝）
+    Rm {
+        /// 课程 ID、编号或名称
+        course: String,
+        /// 内容 ID
+        content_id: String,
+        /// 确认删除（不加只预览）
+        #[arg(short, long)]
+        yes: bool,
+    },
 }
 
 fn init_tracing() {
@@ -273,6 +450,9 @@ pub async fn dispatch(command: Commands) -> Result<()> {
             let store = pkuinfo_common::session::Store::new("course")?;
             handle_otp(action, store.config_dir()).await?;
         }
+
+        // ── TA ──
+        Commands::Ta { action } => commands::cmd_ta(action).await?,
     }
     Ok(())
 }

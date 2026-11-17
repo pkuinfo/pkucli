@@ -20,6 +20,7 @@ cargo build --release --bin info-auth
 cargo build --release --bin cwfw
 cargo build --release --bin bdkj
 cargo build --release --bin cwpay
+cargo build --release --bin disk
 
 # Note: the bin name `course` exists in BOTH `pku-course` and `pku-cli`.
 # When running, disambiguate with `-p`: `cargo run -p pku-course --bin course -- ...`
@@ -54,7 +55,7 @@ cargo test --workspace
 
 ## Architecture
 
-13 crates in a Cargo workspace. One shared library (`common`), one meta install bundle (`pku-cli`), the rest are CLI binaries against PKU services.
+14 crates in a Cargo workspace. One shared library (`common`), one meta install bundle (`pku-cli`), the rest are CLI binaries against PKU services.
 
 ```
 common (pkuinfo-common, lib)    Shared: IAAA auth, OTP, session/cookie persistence, QR, credential resolution, captcha, TLS
@@ -83,7 +84,15 @@ treehole (bin)             PKU Treehole anonymous forum + academic info CLI
 
 course (bin)               PKU Teaching Network (Blackboard Learn) CLI — assignments, files, recordings
     Uses: common for IAAA → Blackboard SSO callback
-    API: HTML scraping with scraper crate (no JSON API), multipart upload
+    API: HTML scraping with scraper crate, multipart upload
+    TA (`course ta`, src/ta.rs): Blackboard public REST /learn/api/public/v1 with the same
+         session cookie; writes need `X-Blackboard-XSRF` = the page's NonceUtil.nonce.ajax.
+         REST attempt-file download and `gradebook/attempts/{id}` are 404 on this server, so
+         downloads use /webapps/assignment/download and grading posts the classic
+         gradeAttemptForm (skip disabled inputs!) then reads back via
+         gradebook/columns/{col}/attempts/{id}. 课堂实录 publish = GET publishVideo.action /
+         unpublishVideo.action links from the modify-mode list. Writes preview unless --yes;
+         calculated columns refused; *_previewuser accounts excluded from lists and batches.
     NOT for course schedule lookups (see treehole).
 
 campuscard (bin)           PKU Campus Card CLI (bdcard.pku.edu.cn, Synjones platform)
@@ -129,6 +138,18 @@ bdkj (bin)                 北大空间 — 学术研讨教室预约 (bdkj.pku.e
     save a fixed roster (e.g. `bdkj group set phy3 -p 学号:姓名 ...`) and reuse with
     `bdkj reserve --group phy3 ...`. `--group` and `--participant` are mutually exclusive.
 
+disk (bin)                 北大网盘 (disk.pku.edu.cn, Eisoo AnyShare 7) — read-only browse/download
+    Uses: common for IAAA (app_id=anyshare) inside AnyShare's web OAuth2 (Ory Hydra):
+          GET /anyshare/oauth2/login?redirect=/anyshare/ (redirect sets `state`; without it the
+          callback 400s "state验证失败") → /oauth2/signin?login_challenge=C; put C in a
+          `login_challenge` cookie; IAAA → GET /oauth2/signin?_rand&token=… → Hydra login/consent →
+          /anyshare/oauth2/login/callback sets client.oauth2_token / client.oauth2_refresh_token /
+          id_token. Login follows redirects hop by hop so every cookie lands in one jar.
+    API: Bearer client.oauth2_token on /api/efast/v1: entry-doc-lib (user / shared_user /
+         department / custom / knowledge doc libs — show unknown types too), dir/list,
+         file/osdownload (pre-signed URL on diskasu.pku.edu.cn:10002). Token lasts 1h; on 401
+         GET /anyshare/oauth2/login/refreshToken?isforced=true rotates all three cookies (save at once).
+
 info-spider (bin)          WeChat Official Account article crawler
     Standalone: own session.rs, own login flow (WeChat QR, not IAAA)
     Config: ~/.config/info-spider/ (separate from common Store)
@@ -159,6 +180,7 @@ pku-cli (bin meta)         Meta crate that re-exports the per-service binaries s
 - cwfw: `app_id="IIPF"`, redirect to `cwfw.pku.edu.cn/WFManager/home2.jsp` (then 2 more bootstrap hops)
 - bdkj: `app_id="bdkj"`, redirect to `https://bdkj.pku.edu.cn/login/oauth`
 - cwpay: `app_id="CWSF"`, redirect to `http://cwpay.pku.edu.cn/dealcas` (X-Token from the dealcas redirect)
+- disk: `app_id="anyshare"`, redirect to `https://disk.pku.edu.cn/oauth2/signin` (inside AnyShare's OAuth2 login challenge)
 
 After IAAA returns a token, each crate has its own `complete_*_login()` that exchanges the token with the target service and saves session+cookies.
 

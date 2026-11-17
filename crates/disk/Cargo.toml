@@ -1,0 +1,33 @@
+[package]
+name = "pku-disk"
+description = "北大网盘（disk.pku.edu.cn，爱数 AnyShare）CLI 客户端"
+readme = "README.md"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["pku", "anyshare", "netdisk", "cli"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "disk"
+path = "src/main.rs"
+
+[lib]
+name = "pku_disk"
+path = "src/lib.rs"
+
+[dependencies]
+pkuinfo-common.workspace = true
+clap.workspace = true
+tokio = { workspace = true, features = ["fs", "io-util"] }
+reqwest = { workspace = true, features = ["stream"] }
+reqwest_cookie_store.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+colored.workspace = true
+chrono.workspace = true
+url.workspace = true
+futures = "0.3"

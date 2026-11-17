@@ -16,6 +16,7 @@ const SUB_VERSIONS: &[(&str, &str, &str)] = &[
     ("cwfw", "pku-cwfw", pku_cwfw::VERSION),
     ("cwpay", "pku-cwpay", pku_cwpay::VERSION),
     ("portal", "pku-portal", pku_portal::VERSION),
+    ("disk", "pku-disk", pku_disk::VERSION),
 ];
 
 #[derive(Parser)]
@@ -93,6 +94,12 @@ enum Tools {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<OsString>,
     },
+    /// 北大网盘 — 浏览 / 下载
+    #[command(disable_help_flag = true, disable_version_flag = true)]
+    Disk {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<OsString>,
+    },
     /// 校内信息门户 — 空闲教室 / 校历 / 网费
     #[command(disable_help_flag = true, disable_version_flag = true)]
     Portal {
@@ -159,6 +166,7 @@ async fn main() -> anyhow::Result<()> {
         Tools::Bdkj { args } => pku_bdkj::run_from(prepend_name("bdkj", &args)).await,
         Tools::Cwfw { args } => pku_cwfw::run_from(prepend_name("cwfw", &args)).await,
         Tools::Cwpay { args } => pku_cwpay::run_from(prepend_name("cwpay", &args)).await,
+        Tools::Disk { args } => pku_disk::run_from(prepend_name("disk", &args)).await,
         Tools::Portal { args } => pku_portal::run_from(prepend_name("portal", &args)).await,
         Tools::Version => {
             print_versions();
@@ -239,18 +247,17 @@ async fn run_update(check_only: bool, no_locked: bool) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!("[*] 正在执行 `cargo install pku-cli --force{}`...", if no_locked { "" } else { " --locked" });
+    println!(
+        "[*] 正在执行 `cargo install pku-cli --force{}`...",
+        if no_locked { "" } else { " --locked" }
+    );
     let mut args = vec!["install", "pku-cli", "--force"];
     if !no_locked {
         args.push("--locked");
     }
-    let status = tokio::task::spawn_blocking(move || {
-        Command::new("cargo")
-            .args(&args)
-            .status()
-    })
-    .await?
-    .context("执行 cargo install 失败")?;
+    let status = tokio::task::spawn_blocking(move || Command::new("cargo").args(&args).status())
+        .await?
+        .context("执行 cargo install 失败")?;
 
     if !status.success() {
         anyhow::bail!("cargo install 退出码非零；可尝试 `pku update --no-locked` 重试");

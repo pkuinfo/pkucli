@@ -58,6 +58,10 @@ path = "src/bin/cwpay.rs"
 name = "portal"
 path = "src/bin/portal.rs"
 
+[[bin]]
+name = "disk"
+path = "src/bin/disk.rs"
+
 [dependencies]
 pku-treehole = { version = "0.1.5", path = "../treehole" }
 pku-course = { version = "0.1.4", path = "../course" }
@@ -70,6 +74,7 @@ pku-bdkj = { version = "0.1.2", path = "../bdkj" }
 pku-cwfw = { version = "0.1.2", path = "../cwfw" }
 pku-cwpay = { version = "0.1.0", path = "../cwpay" }
 pku-portal = { version = "0.1.3", path = "../portal" }
+pku-disk = { version = "0.1.0", path = "../disk" }
 clap.workspace = true
 tokio.workspace = true
 anyhow.workspace = true
