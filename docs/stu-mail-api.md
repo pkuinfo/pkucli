@@ -106,8 +106,7 @@ Cookie: <session cookies>
 ```
 
 The web client also appends `_host`, `p=web`, `_deviceId`, `_appName=sirius-web`, `_version`;
-they are telemetry and not required by the calls below (verified with them present; drop them only
-after testing).
+they are telemetry: every call below was verified with only `func` and `sid` in the query.
 
 ### 2.1 Calls verified on a real mailbox
 
@@ -120,20 +119,36 @@ after testing).
 | `mbox:getMessageData` (GET) | query `mid=<mid>&part=<attachment id>&mode=download` | the file bytes; `Content-Disposition` has the UTF-8 filename |
 | `mbox:searchMessages` | `{"pattern":"<words>","fts.ext":true,"fts.fields":"from,to,subj,cont,aname","conditions":[],"operator":"and","order":"date","desc":true,"start":0,"windowSize":20,"summaryWindowSize":20,"returnAttachments":true,"returnTotal":true,"returnTag":true,"fids":[],"groupings":{"fid":"","flags.read":"","sentDate":"","flags.attached":"","fromAddress":""}}` | `var: [message]`, `groupings` (counts per folder / sender / read / attachment), `keywords`. `fids:[1]` limits folders |
 | `mbox:getMessageSummaryInfos` | `{"ids":["<mid>",…],"pattern":"<words>","summaryWindowSize":null}` | `[{mid,summary}]`, snippets around the hit |
+| `mbox:compose` (send) | URL adds `&l=compose&action=deliver`; body `{"returnInfo":true,"action":"deliver","attrs":{"account":"<uid>","to":["a@x"],"cc":[],"bcc":[],"subject":"…","content":"<p>…</p>","isHtml":true,"saveSentCopy":true}}` | `var`: the composed attrs + compose `id`. Delivered within seconds, copy in 已发送 (fid 3). `account` = canonical `<uid>`; `to` = plain address strings |
+| `mbox:replyMessage` + `mbox:compose` (reply) | step 1 `{"id":"<mid>","toAll":false,"withAttachments":false}` → `var: {id,subject:"Re:…",to,content (quoted original, HTML),account,…}`; step 2 `mbox:compose` as above with `"id":<step-1 id>` and `attrs` from step 1, own text prepended to `content` | original gets `flags.replied: true`. `toAll:true` = reply all |
+
+Folders by id with `mbox:listMessages`: 1 inbox, 3 sent, 2 drafts, 4 trash, 5 spam (all verified).
+History: page with `start` (verified down to the oldest mail, 2022) or use search; a date-range
+condition in `searchMessages` is not mapped yet (`{"field":"receivedDate","operator":"lt",…}` →
+FA_INVALID_PARAMETER).
 
 Message object (list/search): `id` (mid), `fid`, `tid` (thread), `subject`, `from` (`"Name" <addr>`),
 `to`, `sentDate`, `receivedDate`, `modifiedDate` (`YYYY-MM-DD HH:mm:ss`, Beijing time), `size`,
 `summary`, `priority`, `flags` (`read`, `attached`, `realAttached`, `system`, `top`…),
 `attachments` (when requested), `antiVirusStatus`.
 
-### 2.2 Other functions (from the client's function table, not exercised)
+### 2.2 Contacts (REST, same cookies)
 
-Writes were **not** called while capturing (nothing was sent, moved or deleted). Names and body
-shapes come from `static/sirius-web/app-*.js`; verify each before use.
+| endpoint | returns |
+|---|---|
+| `GET /cowork/api/biz/person/personContactList?email=<uid>&lastUpdateTime=0` | `data.personContactVOList[]`: `email`, `qiyeAccountName` (name), `mobileList`, `tel`, `pinyinName`, `remark`, `marked`, `org`/`orgname`, `title`, `personContactGroupList` (verified, 30 contacts) |
+| `GET /cowork/api/biz/person/getContactGroups?email=<uid>&lastUpdateTime=0` | `data.personContactGroupList` |
+| `GET /qiyecontacts/api/qiye/contacts/all?domain=stu.pku.edu.cn` | org directory: `data.contacts` / `data.units` — **empty for students** (PKU does not publish it) |
 
-- Send: `mbox:compose`, URL adds `&l=compose&action=deliver` (`action=save` saves a draft). Body:
-  `{"returnInfo":true,"action":"deliver","attrs":{"account":"<uid>","to":[…],"cc":[…],"bcc":[…],"subject":"…","content":"…","isHtml":true,"saveSentCopy":true,"attachments":[…],"requestReadReceipt":false}}`
-- Reply / forward: `mbox:replyMessage`, `mbox:forwardMessages` (`{"mode":"attach"|"transmit","ids":[mid],"attrs":{…},"action":"deliver"}`)
+Recipient suggestions = personal contacts + addresses from 已发送. The js6 `contact:*` functions
+answered FA_INVALID_PARAMETER with an empty body; not needed.
+
+### 2.3 Other functions (from the client's function table, not exercised)
+
+Names and body shapes come from `static/sirius-web/app-*.js`; verify each before use.
+
+- Draft: `mbox:compose` with `&action=save`
+- Forward: `mbox:forwardMessages` (`{"mode":"attach"|"transmit","ids":[mid],"attrs":{…},"action":"deliver"}`)
 - Attachments for sending: `upload:prepare` → `upload:directData` (legacy `mbox:uploadAttach`)
 - Flags / move: `mbox:updateMessageInfos`, `mbox:markSeen`, `mbox:updateMessageTags`, `mbox:listTags`
 - Delete: `mbox:deleteMessages`, `mbox:emptyFolder`
