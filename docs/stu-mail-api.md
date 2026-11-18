@@ -54,7 +54,7 @@ Encryption is jsbn's `RSAKey.encrypt` (PKCS#1 v1.5, hex output), source
 Response: **302**. Sets `QIYE_SESSIONID`, `QIYE_URS` (on `.qiye.163.com`). The `Location` tells what
 comes next:
 
-- `…/static/login/sms/index.html?…&uid=<uid>&account_name=<canon>&mobile=136****846&…` → SMS 2FA
+- `…/static/login/sms/index.html?…&uid=<uid>&account_name=<canon>&mobile=1xx****xxx&…` → SMS 2FA
   (section 1.3). Note `account_name` here is the canonical one; use it from now on.
 - `https://mailshz.qiye.163.com/static/sirius-web/jump/index.html?sid=<sid>…` → logged in (1.4).
 - Anything else (back to the login page with an error code) → wrong password / locked / captcha.
