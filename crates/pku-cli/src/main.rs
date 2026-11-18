@@ -17,6 +17,7 @@ const SUB_VERSIONS: &[(&str, &str, &str)] = &[
     ("cwpay", "pku-cwpay", pku_cwpay::VERSION),
     ("portal", "pku-portal", pku_portal::VERSION),
     ("disk", "pku-disk", pku_disk::VERSION),
+    ("mail", "pku-mail", pku_mail::VERSION),
 ];
 
 #[derive(Parser)]
@@ -100,6 +101,12 @@ enum Tools {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<OsString>,
     },
+    /// 学生邮箱 — 收信 / 搜索 / 附件 / 发信（@stu.pku.edu.cn）
+    #[command(disable_help_flag = true, disable_version_flag = true)]
+    Mail {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<OsString>,
+    },
     /// 校内信息门户 — 空闲教室 / 校历 / 网费
     #[command(disable_help_flag = true, disable_version_flag = true)]
     Portal {
@@ -167,6 +174,7 @@ async fn main() -> anyhow::Result<()> {
         Tools::Cwfw { args } => pku_cwfw::run_from(prepend_name("cwfw", &args)).await,
         Tools::Cwpay { args } => pku_cwpay::run_from(prepend_name("cwpay", &args)).await,
         Tools::Disk { args } => pku_disk::run_from(prepend_name("disk", &args)).await,
+        Tools::Mail { args } => pku_mail::run_from(prepend_name("mail", &args)).await,
         Tools::Portal { args } => pku_portal::run_from(prepend_name("portal", &args)).await,
         Tools::Version => {
             print_versions();

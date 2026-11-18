@@ -2445,6 +2445,7 @@ dependencies = [
  "pku-cwpay",
  "pku-disk",
  "pku-elective",
+ "pku-mail",
  "pku-portal",
  "pku-treehole",
  "pkuinfo-spider",
@@ -2566,6 +2567,26 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "viuer",
+]
+
+[[package]]
+name = "pku-mail"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "colored",
+ "pkuinfo-common",
+ "rand 0.8.5",
+ "regex",
+ "reqwest",
+ "reqwest_cookie_store",
+ "rsa",
+ "serde",
+ "serde_json",
+ "tokio",
+ "url",
 ]
 
 [[package]]

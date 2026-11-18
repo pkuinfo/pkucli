@@ -1,0 +1,35 @@
+[package]
+name = "pku-mail"
+description = "北大学生邮箱（@stu.pku.edu.cn，网易企业邮）CLI 客户端"
+readme = "README.md"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+keywords = ["pku", "mail", "email", "cli"]
+categories = ["command-line-utilities", "email"]
+
+[[bin]]
+name = "mail"
+path = "src/main.rs"
+
+[lib]
+name = "pku_mail"
+path = "src/lib.rs"
+
+[dependencies]
+pkuinfo-common.workspace = true
+clap.workspace = true
+tokio = { workspace = true, features = ["fs", "io-util"] }
+reqwest.workspace = true
+reqwest_cookie_store.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+colored.workspace = true
+chrono.workspace = true
+url.workspace = true
+rand.workspace = true
+regex.workspace = true
+rsa = "0.9"

@@ -159,6 +159,19 @@ disk ls 个人/课件                 # Browse a folder
 disk download 个人/课件 -o ./out  # Download a folder, keeping its structure
 ```
 
+### Mail — 北大学生邮箱
+
+Student mailbox (@stu.pku.edu.cn, NetEase Enterprise Mail): folders, list, read, search, attachments, contacts, send and reply. Logs in with your student ID and IAAA password (checked by the mail server itself, not via IAAA); a new machine needs one SMS code. Sending always previews first and only goes out with `--yes`.
+
+```bash
+mail login -p                    # SMS code once per machine
+mail ls --unread                 # Unread mail in the inbox
+mail read <mid>                  # Read (does not mark as read)
+mail search 奖学金                # Full-text search
+mail download <mid> -o ./out     # All attachments
+mail send --to a@pku.edu.cn -s "Hi" --body "..."   # Preview; add --yes to send
+```
+
 ### Info Spider — 微信公众号爬虫
 
 WeChat Official Account article crawler (standalone auth, not IAAA).
@@ -210,6 +223,7 @@ Available tools:
 - course: manage Blackboard Learn courses, assignments, videos
 - campuscard: check balance, pay, view transaction history
 - elective: automated course selection with CAPTCHA solving
+- mail: student mailbox — read/search/download; send/reply preview unless --yes
 - info-spider: crawl WeChat official account articles
 - info-auth: manage IAAA credentials (store/check/clear)
 
@@ -269,3 +283,4 @@ Credential resolution order:
 | [`pku-auth`](https://crates.io/crates/pku-auth) | bin | Credential management |
 | [`pkuinfo-spider`](https://crates.io/crates/pkuinfo-spider) | bin | WeChat article crawler |
 | [`pku-disk`](https://crates.io/crates/pku-disk) | bin | PKU Netdisk CLI |
+| [`pku-mail`](https://crates.io/crates/pku-mail) | bin | Student mail (@stu.pku.edu.cn) CLI |

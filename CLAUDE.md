@@ -21,6 +21,7 @@ cargo build --release --bin cwfw
 cargo build --release --bin bdkj
 cargo build --release --bin cwpay
 cargo build --release --bin disk
+cargo build --release --bin mail
 
 # Note: the bin name `course` exists in BOTH `pku-course` and `pku-cli`.
 # When running, disambiguate with `-p`: `cargo run -p pku-course --bin course -- ...`
@@ -55,7 +56,7 @@ cargo test --workspace
 
 ## Architecture
 
-14 crates in a Cargo workspace. One shared library (`common`), one meta install bundle (`pku-cli`), the rest are CLI binaries against PKU services.
+15 crates in a Cargo workspace. One shared library (`common`), one meta install bundle (`pku-cli`), the rest are CLI binaries against PKU services.
 
 ```
 common (pkuinfo-common, lib)    Shared: IAAA auth, OTP, session/cookie persistence, QR, credential resolution, captcha, TLS
@@ -149,6 +150,17 @@ disk (bin)                 北大网盘 (disk.pku.edu.cn, Eisoo AnyShare 7) — 
          department / custom / knowledge doc libs — show unknown types too), dir/list,
          file/osdownload (pre-signed URL on diskasu.pku.edu.cn:10002). Token lasts 1h; on 401
          GET /anyshare/oauth2/login/refreshToken?isforced=true rotates all three cookies (save at once).
+
+mail (bin)                 北大学生邮箱 (@stu.pku.edu.cn, NetEase 企业邮) — see docs/stu-mail-api.md
+    Auth: NOT IAAA. Same student ID + IAAA password (common::credential), checked by NetEase:
+          prelogin.jsp RSA key → domainEntLogin (hex PKCS#1 v1.5 of `password#rand`, passtype=3)
+          → 302 Location: SMS page (send_code.jsp + mobileLogin pass_2fa=1) or `sid` + mail host.
+          Stable `_deviceId` in device.json + `_sDeviceId` cookie = SMS once per machine; logout
+          keeps them. Two-step SMS for agents: `login -p` sends and exits (state in pending.json),
+          `login -p --code N` finishes. Canonical account (alias-resolved) stored as session uid.
+    API: POST https://<host>/js6/s?func=mbox:…&sid=… JSON RPC (code S_OK); contacts via
+         /cowork/api REST. Invalid session → one silent re-login (keyring/env, trusted device).
+         send/reply preview unless --yes. Pure parsing in `parse.rs` with unit tests.
 
 info-spider (bin)          WeChat Official Account article crawler
     Standalone: own session.rs, own login flow (WeChat QR, not IAAA)
