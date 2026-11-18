@@ -231,3 +231,4 @@ Both set a realistic User-Agent. All builders call `tls::apply_extra_roots()` fr
 
 - `docs/treehole-api.md` — Treehole REST API spec with endpoint details
 - `docs/wechat-mp-flow.md` — Step-by-step WeChat MP login flow notes
+- `docs/stu-mail-api.md` — Student mail (@stu.pku.edu.cn, NetEase 企业邮) login (RSA + SMS 2FA) and the `/js6/s` mail RPC
